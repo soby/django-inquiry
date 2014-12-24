@@ -1,0 +1,6 @@
+venv
+*.pyc
+.project
+.pydevproject
+test.db
+mock_file*

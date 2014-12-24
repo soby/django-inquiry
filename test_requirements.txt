@@ -1,0 +1,4 @@
+coverage
+flake8
+mock
+-e git+https://github.com/vandersonmota/model_mommy.git@2e0a0f153d96b7a57d36a23144773160187fc4e6#egg=model_mommy

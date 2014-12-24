@@ -1,0 +1,9 @@
+<html>
+<body onload="document.forms['theform'].submit()">
+    <form id="theform" action="{{action}}" method="POST">
+        {% for key,value in form_params.items %}
+            <input type="hidden" name="{{key}}" value="{{ value }}"></input>
+        {% endfor %}
+    </form>
+</body>
+</html>
