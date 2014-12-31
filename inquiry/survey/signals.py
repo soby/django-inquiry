@@ -49,7 +49,7 @@ def assign_object_perms(sender, instance, created, **kwargs):
 def survey_viewers_group_and_view_perm(sender, instance, created, **kwargs):
     if created:
         grp = Group(
-                    name=group_for_org(instance,
+                    name=group_for_org(instance.org,
                                        'survey-{0}-viewers'.format(
                                                             instance.pk
                                                                     )
@@ -70,7 +70,7 @@ def survey_viewers_group_and_view_perm(sender, instance, created, **kwargs):
 def response_viewers_group_and_view_perm(sender, instance, created, **kwargs):
     if created:
         grp = Group(
-                    name=group_for_org(instance,
+                    name=group_for_org(instance.org,
                                        'response-{0}-viewers'.format(
                                                             instance.pk
                                                                     )
@@ -85,6 +85,23 @@ def response_viewers_group_and_view_perm(sender, instance, created, **kwargs):
                             name=group_for_org(instance.org,'administrators'))
         assign_perm(make_perm(instance,'view'), admins, instance)
         
+# post-delete on Response to delete the viewers group
+@receiver(signals.post_delete, sender=models.Response)
+def delete_response_viewers_group_and_view_perm(sender, instance, **kwargs):
+    try:
+        grp = Group.objects.get(
+                name=group_for_org(instance.org,
+                                   'response-{0}-viewers'.format(
+                                                        instance.pk
+                                                                )
+                                   )
+                )
+    except Group.DoesNotExist:
+        # I guess we're done here
+        pass
+    else:
+        grp.delete()
+    
          
 # all survey obj post-save
 # generic admin permission assigner and user per assigner for user-owned

@@ -3,9 +3,6 @@ from rest_framework.test import APITestCase
 from ......core.tests.api.v1.views import base
 from .....api.v1.views import survey
 from .....utils.test import data
-from ......core.utils.test import data as core_data
-from ......core.utils.test.objects import remove_fields
-from ......core.utils.auth import make_perm, make_global_perm
 
 
 class StatusViewSetTest(base.UserTestMixin, base.AutoTestMixin, 
@@ -137,7 +134,7 @@ class ResponseViewSetTest(base.UserTestMixin, base.AutoTestMixin,
     namespace = None
     viewset = survey.ResponseViewSet
     
-    FIELDS = ['survey', 'user', 'status']
+    FIELDS = ['survey', 'user', 'status', 'due_date']
     UPDATE_FIELDS = ['survey', 'user', 'status']
     FK_FIELDS = ['survey', 'user','status']
     CREATOR_CLASS = data.ResponseCreator

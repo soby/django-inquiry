@@ -5,7 +5,7 @@ from rest_framework import serializers
 import logging
 LOGGER = logging.getLogger(__name__)
 
-ORG_OWNED_READ_ONLY_FIELDS = ['created','modified']
+ORG_OWNED_READ_ONLY_FIELDS = ['id','created','modified']
 ORG_OWNED_QUERYSET_RESTRICTIONS = {}
 
 USER_OWNED_READ_ONLY_FIELDS = ORG_OWNED_READ_ONLY_FIELDS +\

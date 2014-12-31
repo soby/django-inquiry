@@ -12,6 +12,8 @@ from django.core.urlresolvers import reverse
 from social.backends.google import GoogleOAuth2
 from social.exceptions import AuthException
 
+from ..utils.auth import get_org_model
+
 # From https://github.com/omab/python-social-auth/blob/master/social/pipeline/social_auth.py
 def associate_by_email_and_allowed_org(backend, details, user=None, *args, **kwargs):
     """
@@ -76,6 +78,42 @@ def user_details(strategy, details, user=None, *args, **kwargs):
         if changed:
             strategy.storage.user.changed(user)
 
+# https://github.com/omab/python-social-auth/blob/master/social/pipeline/user.py#L56
+# but with domain whitelisting
+def create_user(strategy, details, user=None, *args, **kwargs):
+    if user:
+        return {'is_new': False}
+
+    fields = dict((name, kwargs.get(name) or details.get(name))
+                        for name in strategy.setting('SAFE_USER_FIELDS',
+                                                      []))
+    if not fields:
+        return
+    
+    email = details.get('email')
+    if not email:
+        return
+    domain = ''.join(email.split('@')[1:])
+    allowedOrg = None
+    for org in get_org_model().objects.all():
+        if not org.preference_auth_email_autocreate_domains:
+            continue
+        else:
+            domains = [x.strip() for x in 
+                       org.preference_auth_email_autocreate_domains.split(',')]
+            if domain in domains:
+                allowedOrg = org
+    if not allowedOrg:
+        return None
+    
+    fields['org'] = allowedOrg
+    fields['username'] = email
+    
+    return {
+        'is_new': True,
+        'user': strategy.create_user(**fields)
+    }
+    
 class ConfigurableRedirectGoogleOauth2Backend(GoogleOAuth2):
     """ Google is really anal about redirect_uri always being pre-configured. 
         Since we have a subdomain per customer, that doesn't really work for us.

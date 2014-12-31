@@ -50,6 +50,7 @@ class Migration(migrations.Migration):
                 ('name', models.CharField(max_length=512)),
                 ('subdomain', models.CharField(max_length=256, unique=True, null=True, blank=True)),
                 ('preference_auth_google_oauth2', models.BooleanField(default=False, help_text=b'Allow Google OAuth2 login')),
+                ('preference_auth_email_autocreate_domains', models.CharField(max_length=2048, null=True, blank=True)),
             ],
             options={
                 'abstract': False,

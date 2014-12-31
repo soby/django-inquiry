@@ -36,7 +36,9 @@ class TestOrgSignals(TestCase):
         for model in config.get_models():
             if model == Status:
                 continue
-            
+            if not useru.has_perm(
+                                    make_global_perm(model, 'add')):
+                print model
             self.assertTrue(useru.has_perm(
                                     make_global_perm(model, 'add')))
             self.assertTrue(useru.has_perm(

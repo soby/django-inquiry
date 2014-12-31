@@ -1,0 +1,36 @@
+<section class="app-container md-whiteframe-z1" layout="column">
+    <div class="app-overview-form" flex>
+      <md-content md-theme="app-dark" flex>
+	      <md-content layout-margin>
+		    <form>
+		      <div class="row" layout-align="space-around">
+		        <md-text-float label="Name" ng-model="record.name" class="long" flex="60"></md-text-float>
+		        <md-text-float label="Type" ng-model="record.survey_type.name"></md-text-float>
+		      </div>
+		    </form>
+		  </md-content>
+	  </md-content>
+	  <md-content>
+	    <md-content layout-margin>
+		    <form>
+		      <md-text-float multiline label="Description" ng-model="record.description" class="long tall"></md-text-float>
+		      <div class="row">
+                  <md-text-float label="Sections" ng-model="section_count"> </md-text-float>
+                  <md-text-float label="Questions" ng-model="question_count"> </md-text-float>
+              </div>
+		      <div class="row">
+		          <md-text-float label="Owner" ng-model="record.owner.username" flex="40"> </md-text-float>
+		          <md-text-float label="Updated" ng-model="modified_date" flex="40" class="long"> </md-text-float>
+		      </div>
+		    </form>
+	    </md-content>
+	  </md-content>
+	  <md-content layout-margin>
+	      <md-divider></md-divider>
+	      <md-content layout-margin layout="row" layout-align="end center">
+	           <md-button class="md-primary" ng-click="launch_survey()">Launch</md-button>
+	      </md-content>
+      </md-content>  
+    </div>
+    
+</section>  

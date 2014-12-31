@@ -17,7 +17,8 @@ class OrgViewSetTest(base.ViewSetBaseTestMixin,APITestCase):
     viewset = org.OrgViewSet
 
     def setUp(self):
-        self.obj = models.Org(name='blah',subdomain='blah')
+        self.obj = models.Org(name='blah',subdomain='blah',
+                        preference_auth_email_autocreate_domains='acme.com')
         self.obj.save()
         self.u1 = get_user_model()(username='user1',org=self.obj)
         self.u1.save()
@@ -57,7 +58,8 @@ class OrgViewSetTest(base.ViewSetBaseTestMixin,APITestCase):
 
     def test_detail(self):
         self.client.force_authenticate(user=self.u1)
-        url = reverse(self.named_view_base+'-detail',kwargs={'pk':self.obj.id},current_app=self.namespace)
+        url = reverse(self.named_view_base+'-detail',kwargs={'pk':self.obj.id},
+                      current_app=self.namespace)
         res = self.client.get(url)
         self.assertEqual(200,res.status_code)
         resJson = json.loads(res.content)
@@ -65,7 +67,8 @@ class OrgViewSetTest(base.ViewSetBaseTestMixin,APITestCase):
 
     def test_detail_regular_user(self):
         self.client.force_authenticate(user=self.u2)
-        url = reverse(self.named_view_base+'-detail',kwargs={'pk':self.obj.id},current_app=self.namespace)
+        url = reverse(self.named_view_base+'-detail',kwargs={'pk':self.obj.id},
+                      current_app=self.namespace)
         res = self.client.get(url)
         self.assertEqual(200,res.status_code)
         resJson = json.loads(res.content)
@@ -73,7 +76,8 @@ class OrgViewSetTest(base.ViewSetBaseTestMixin,APITestCase):
 
     def test_detail_bad_cross_org(self):
         self.client.force_authenticate(user=self.u1)
-        url = reverse(self.named_view_base+'-detail',kwargs={'pk':self.org2.id},current_app=self.namespace)
+        url = reverse(self.named_view_base+'-detail',
+                      kwargs={'pk':self.org2.id},current_app=self.namespace)
         res = self.client.get(url)
         self.assertEqual(404,res.status_code)
 
@@ -83,10 +87,14 @@ class OrgViewSetTest(base.ViewSetBaseTestMixin,APITestCase):
         res = self.client.get(url)
         self.assertEqual(200,res.status_code)
         resJson = json.loads(res.content)
-        self.assertEqual([{u'preference_auth_google_oauth2': False, u'subdomain': u'blah', u'name': u'blah'}],remove_fields(['id'],resJson))
+        self.assertEqual([{u'preference_auth_google_oauth2': False,
+                    u'preference_auth_email_autocreate_domains': 'acme.com',
+                    u'subdomain': u'blah', u'name': u'blah'}],
+                    remove_fields(['id'],resJson))
 
     def test_partial_update_bad(self):
-        url = reverse(self.named_view_base+'-detail',kwargs={'pk':self.obj.id},current_app=self.namespace)
+        url = reverse(self.named_view_base+'-detail',kwargs={'pk':self.obj.id},
+                      current_app=self.namespace)
         self.client.force_authenticate(user=self.u1)
         res = self.client.patch(url,data={'name':'blahblah'})
         self.assertEqual(403,res.status_code)

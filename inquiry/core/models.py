@@ -33,6 +33,10 @@ class Org(BaseModel):
     ##### Preferences
     ## Auth
     preference_auth_google_oauth2 = models.BooleanField(default=False,help_text="Allow Google OAuth2 login")
+    preference_auth_email_autocreate_domains = models.CharField(
+                                                max_length=2048,
+                                                null=True,
+                                                blank=True)
 
 
     objects = models.Manager()

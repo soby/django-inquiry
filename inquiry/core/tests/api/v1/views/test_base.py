@@ -1,6 +1,5 @@
 from django.test import TestCase
 from .....api.v1.views import base
-from ..... import models
 from django.contrib.auth import get_user_model
 
 import mock
@@ -25,8 +24,8 @@ class BaseAPIViewMixinTest(TestCase):
         obj.request = mock.Mock()
         objMock = mock.Mock()
         objMock.Meta.model = get_user_model()
-        objMock.validated_data={}
-        objMock._data={}
+        objMock.validated_data={'blah':'stuff'}
+        objMock._data={'blah':'stuff'}
         obj.perform_create(objMock)
         self.assertEqual(objMock.validated_data.get('org_id'),obj.request.user.org_id)
 
@@ -34,7 +33,7 @@ class BaseAPIViewMixinTest(TestCase):
         # probably shouldn't ever happen
         obj = base.BaseAPIViewMixin()
         objMock = mock.Mock()
-        objMock.validated_data={}
-        objMock._data={}
+        objMock.validated_data={'blah':'stuff'}
+        objMock._data={'blah':'stuff'}
         obj.perform_create(objMock)
         self.assertEqual(None, objMock.validated_data.get('org_id'))

@@ -146,6 +146,7 @@ class Migration(migrations.Migration):
                 ('modified', models.DateTimeField(auto_now=True)),
                 ('passed', models.NullBooleanField()),
                 ('score', models.IntegerField(null=True, blank=True)),
+                ('due_date', models.DateTimeField(null=True, blank=True)),
                 ('completed_date', models.DateTimeField(null=True, blank=True)),
                 ('created_by', models.ForeignKey(related_name='survey_response_created_by_set', blank=True, to=settings.AUTH_USER_MODEL, null=True)),
                 ('modified_by', models.ForeignKey(related_name='survey_response_modified_by_set', blank=True, to=settings.AUTH_USER_MODEL, null=True)),

@@ -7,6 +7,7 @@ from inquiry.survey.api.v1 import urls as apisurvey_v1_urls
 
 urlpatterns = patterns('',
     url(r'^admin/', include(admin.site.urls)),
+    url(r'^(?:index.html)?$', 'django.contrib.staticfiles.views.serve', kwargs={'path': 'app/index.html'}),
     
     # Social auth login. Uses python-social-auth
     url(r'^auth/social/bounce(?P<target_uri>/.*)$', SavedSubdomainInStateRedirectorView.as_view(),name="auth/social/bounce"),
@@ -15,3 +16,6 @@ urlpatterns = patterns('',
     url(r'^api/v1/core/',include(apicore_v1_urls)),
     url(r'^api/v1/survey/',include(apisurvey_v1_urls)),
 )
+
+    
+    

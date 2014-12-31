@@ -82,7 +82,7 @@ SOCIAL_AUTH_GOOGLE_OAUTH2_INQUIRY_OVERRIDE_REDIRECT_URI_REDIRECTOR_NAME = \
 
 LOGIN_URL          = '/#/login'
 SOCIAL_AUTH_LOGIN_REDIRECT_URL = '/#/complete_login'
-LOGIN_ERROR_URL    = '/#/login_error'
+LOGIN_ERROR_URL    = '/#/login?error=1'
 
 SOCIAL_AUTH_USER_MODEL = AUTH_USER_MODEL
 SOCIAL_AUTH_USERNAME_IS_FULL_EMAIL = True
@@ -124,6 +124,7 @@ SOCIAL_AUTH_PIPELINE = (
 
     # Create a user account if we haven't found one yet.
     #'social.pipeline.user.create_user',
+    'inquiry.core.auth.social.create_user',
 
     # Create the record that associated the social account with this user.
     'social.pipeline.social_auth.associate_user',

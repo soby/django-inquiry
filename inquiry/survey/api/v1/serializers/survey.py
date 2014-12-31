@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from .....core.api.v1.serializers.base import (
     BaseModelSerializer, FieldRestrictingMixin,
     USER_OWNED_READ_ONLY_FIELDS, USER_OWNED_QUERYSET_RESTRICTIONS)
+from .....core.api.v1.serializers.user import UserSerializer
 
 from . import base
 from .... import models
@@ -142,9 +143,10 @@ class ResponseSerializer(FieldRestrictingMixin, BaseModelSerializer):
     class Meta:
         model = models.Response
         fields = USER_OWNED_READ_ONLY_FIELDS +\
-            ['survey', 'user', 'passed', 'score', 'status', 'completed_date']
+            ['survey', 'user', 'passed', 'score', 'status', 'completed_date',
+             'due_date']
         read_only_fields = USER_OWNED_READ_ONLY_FIELDS +\
-           ['passed', 'score', 'completed_date']
+           ['passed', 'score', 'completed_date', 'due_date']
             
 
 class ResponseSectionSerializer(ResponseOwnedMixin, FieldRestrictingMixin, 

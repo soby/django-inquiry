@@ -10,4 +10,5 @@ Org = get_org_model()
 class OrgSerializer(BaseModelSerializer):
     class Meta:
         model = Org
-        fields = ['id', 'name', 'subdomain', 'preference_auth_google_oauth2',]
+        fields = ['id', 'name', 'subdomain', 'preference_auth_google_oauth2',
+                  'preference_auth_email_autocreate_domains',]

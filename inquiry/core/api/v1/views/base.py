@@ -1,7 +1,7 @@
 import inspect
 
 from rest_framework.response import Response
-from rest_framework.decorators import detail_route
+from rest_framework.decorators import detail_route, list_route
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 
@@ -203,3 +203,8 @@ class BaseAPIViewMixin(object):
     def get_queryset(self):
         return self.serializer_class.Meta.model.manager\
                                                 .for_user(self.request.user)
+                                                
+    @list_route(methods=['get'])
+    def count(self, request, pk=None):
+        return Response({'count':self.filter_queryset(self.get_queryset()).count()})
+        

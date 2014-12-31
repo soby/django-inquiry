@@ -141,7 +141,7 @@ class AutoTestMixin(object):
     CREATE_ONLY_FIELDS = []
     REQUIRE_ADMIN = False
     M2M_FIELDS = []
-    FK_FIELDS = []
+    FK_FIELDS = [] # FKs serialized to just an ID
     CREATOR_CLASS = None
     
     def setUp(self):

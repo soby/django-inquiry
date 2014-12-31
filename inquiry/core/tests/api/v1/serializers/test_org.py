@@ -13,6 +13,7 @@ class OrgSerializerTest(TestCase):
         self.data = {'name': 'blah',
                      'subdomain': 'stuff',
                      'preference_auth_google_oauth2': True,
+                     'preference_auth_email_autocreate_domains': 'acme.com',
                      }
         self.o = Org(**self.data)
         self.o.save()
