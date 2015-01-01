@@ -1,6 +1,7 @@
 from rest_framework.viewsets import ModelViewSet
 from django_filters import FilterSet, MethodFilter
 from django.contrib.auth import get_user_model
+from django.db.models import Q
 
 from rest_framework.decorators import detail_route
 from rest_framework import serializers
@@ -127,17 +128,45 @@ class ResponseViewSet(base.BaseAPIViewMixin, ModelViewSet):
     queryset = serializer_class.Meta.model.objects.none()
 
 
+class ResponseSectionFilter(FilterSet):
+    questionresponse__null_answer = MethodFilter(action='handle_no_answer')
+    
+    class Meta:
+        model = survey.ResponseSectionSerializer.Meta.model
+        fields = ['survey', 'response', 'survey_section',
+                  'questionresponse__null_answer']
+    
+    def handle_no_answer(self, queryset, value):
+        if value == False or value == 'False':
+            return queryset.exclude(Q(questionresponse__answer__isnull=True) |
+                                    Q(questionresponse__answer=''))
+        else:  
+            return queryset.filter(Q(questionresponse__answer__isnull=True) |
+                                    Q(questionresponse__answer=''))
+            
 class ResponseSectionViewSet(base.BaseAPIViewMixin, ModelViewSet):
     serializer_class = survey.ResponseSectionSerializer
     # Required for DjangoObjectPermissions
     queryset = serializer_class.Meta.model.objects.none()
     permission_classes = [survey_permissions.ResponseOwnedModelPermissions, ]
+    filter_class = ResponseSectionFilter
 
 
 class QuestionResponseFilter(FilterSet):
+    null_answer = MethodFilter(action='handle_no_answer')
+    
     class Meta:
         model = survey.QuestionResponseSerializer.Meta.model
-        fields = {'answer': ['isnull'] }
+        fields = ['survey', 'response', 'section',
+                  'question', 'answer', 'null_answer']
+    
+    def handle_no_answer(self, queryset, value):
+        if value == False or value == 'False':
+            return queryset.exclude(Q(answer__isnull=True) |
+                                    Q(answer=''))
+        else:  
+            return queryset.filter(Q(answer__isnull=True) |
+                                    Q(answer=''))
 
     
 class QuestionResponseViewSet(base.BaseAPIViewMixin, ModelViewSet):

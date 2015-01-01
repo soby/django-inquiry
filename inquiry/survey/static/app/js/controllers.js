@@ -301,9 +301,8 @@ inquiryControllers
 			ResponseSection.count({response:$scope.oid}).then(function(count){
 				$scope.section_count = count;
 				ResponseSection.count(
-						{response: $scope.oid, 
-FIX THIS FILTERING							
-						 questionresponse__answer__isnull: 'False'}).then(
+						{response: $scope.oid, 							
+							questionresponse__null_answer: 'False'}).then(
 					function(cnt){
 						$scope.section_count += '  ('+cnt.toString()+')';
 					});
@@ -311,7 +310,7 @@ FIX THIS FILTERING
 			QuestionResponse.count({response:$scope.oid}).then(function(count){
 				$scope.question_count = count;
 				QuestionResponse.count({response: $scope.oid, 
-										answer__isnull: 'True'}).then(
+										null_answer: 'False'}).then(
 						function(cnt){
 							$scope.question_count += '  ('+cnt.toString()+')';
 						});

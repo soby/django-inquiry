@@ -349,7 +349,7 @@ class ResponseSectionOwnedModel(ResponseOwnedModel):
     
 class QuestionResponse(ResponseSectionOwnedModel):
     question = models.ForeignKey(Question)
-    answer = models.TextField()
+    answer = models.TextField(null=True, blank=True)
     
     @classmethod
     def create_from_question(cls, question, section, survey, response, 
