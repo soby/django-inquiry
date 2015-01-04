@@ -46,7 +46,7 @@ function create_basic_services(url_base, $http, $q) {
 	      }, // update
 	      delete: function(obj) {
 		        var deferred = $q.defer();
-		        $http.delete(url_base+obj.id+'/',data)
+		        $http.delete(url_base+obj.id+'/')
 		          .success(function(data,status,headers,config) {
 		            deferred.resolve(data);
 		          })
@@ -66,6 +66,17 @@ function create_basic_services(url_base, $http, $q) {
 		          });
 		        return deferred.promise;
 	      }, // count
+	      meta: function(oid) {
+	    	    var deferred = $q.defer();
+		        $http.get(url_base+oid+'/meta/')
+		          .success(function(data,status,headers,config) {
+		            deferred.resolve(data);
+		          })
+		          .error(function(data,status,headers,config) {
+		            deferred.reject(data);
+		          });
+		        return deferred.promise;
+	      }, // meta
 	      include: function(configList) {
 	    	  // config should look like:
 	    	  // [{'field':'someField','service':Srv}]
@@ -88,7 +99,9 @@ function create_basic_services(url_base, $http, $q) {
 		    		  if (!val) {
 		    			  continue;
 		    		  }
-		    		  prom = srv.get(val).then(record_setter(record,field));
+		    		  prom = srv.get(val).then(
+		    					  record_setter(record, field)
+		    					 );
 		    		  proms.push(prom);
 		    	  }
 		    	  $q.all(proms).then(
@@ -105,10 +118,16 @@ function create_basic_services(url_base, $http, $q) {
 	      }, // include
 	      list_include: function(configList) {
 	    	  // Same as above but works on lists of records
-	    	  // TODO: Make efficient
-	    	  function record_setter(record, field) {
-	    		  return function(obj) {
-	    			  record[field] = obj;
+	    	  function record_list_setter(records, field) {
+	    		  return function(objs) {
+	    			  for (var i in objs) {
+	    				  for (var y in records) {
+	    					  if (objs[i].id.toString() == 
+	    						  records[y][field].toString()) {
+	    						  	records[y][field] = objs[i];
+	    					  }
+	    				  }
+	    			  }
 	    		  }
 	    	  }
 	    	  
@@ -121,16 +140,23 @@ function create_basic_services(url_base, $http, $q) {
 		    		  var srv = config['service'];
 		    		  var field = config['field'];
 		    		  
+		    		  var pks = [];
 		    		  for (i in records) {
 		    			  var val = records[i][field];
 			    		  if (!val) {
 			    			  continue;
 			    		  }
-		    			  prom = srv.get(val).then(
-		    					    record_setter(records[i],field)
-		    					  );
-		    			  proms.push(prom);
+			    		  if (pks.indexOf(val) == -1) {
+			    			  pks.push(val);
+			    		  }
 		    		  }
+		    		  // angular will break lists up into multiple qs
+		    		  // params
+		    		  var pkquery = '['+pks.toString()+']';
+		    		  prom = srv.list({pk__in: pkquery}).then(
+		    				  record_list_setter(records, field)
+		    		  );
+		    		  proms.push(prom);
 		    	  }
 		    	  $q.all(proms).then(
 		    	      function() {
@@ -143,6 +169,6 @@ function create_basic_services(url_base, $http, $q) {
 		    	  return deferred.promise;
 	    	  }
 	    	  return f
-	      }, // include
+	      } // list_include
 	} // return
 } // create_basic_services

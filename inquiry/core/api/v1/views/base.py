@@ -9,6 +9,8 @@ from ....utils.auth import get_org_model
 from ....auth.permissions import OwnedModelPermissions
 from ....models import OrgOwnedModel, UserOwnedModel
 
+from guardian.shortcuts import get_perms
+
 import logging
 LOGGER = logging.getLogger(__name__)
 
@@ -206,5 +208,17 @@ class BaseAPIViewMixin(object):
                                                 
     @list_route(methods=['get'])
     def count(self, request, pk=None):
-        return Response({'count':self.filter_queryset(self.get_queryset()).count()})
+        return Response({'count':self.filter_queryset(
+                                                self.get_queryset()).count()})
+    
+    @detail_route(methods=['get'])
+    def meta(self, request, pk=None):
+        data = {}
+        perms = get_perms(request.user, self.get_object())
+        data['permissions'] = dict.fromkeys(
+                                    [x.split('_')[0] for x in perms],
+                                    True)
+        return Response(data)
+        
+         
         

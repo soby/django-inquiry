@@ -100,6 +100,10 @@ inquiryControllers
 			position: 'top right'
 		});
     }
+    
+    $scope.take_survey = function(response) {
+    	$location.path('/survey/'+response.id+'/');
+    }
 }])
 
 .controller('LoginController', ['$scope', '$http', '$location', 'User', 
@@ -130,8 +134,8 @@ inquiryControllers
 }])
 
 .controller('SurveysController', 
-  ['$scope', '$http', '$routeParams', '$location', 'Survey', 'Response',
-  function ($scope, $http, $routeParams, $location, Survey, Response) {
+  ['$scope', '$routeParams', '$location', 'Survey', 'Response',
+  function ($scope, $routeParams, $location, Survey, Response) {
 	$scope.status = $routeParams.status;
 	$scope.$parent.select('surveys.'+$scope.status);
 	
@@ -189,9 +193,9 @@ inquiryControllers
 }])
 
 .controller('SurveyOverviewController', 
-		['$scope', '$http', '$routeParams', '$location', '$filter', 'Survey', 
+		['$scope', '$routeParams', '$filter', 'Survey', 
 		 'User', 'Type', 'Section', 'Question',
-	function ($scope, $http, $routeParams, $location, $filter, Survey, User, 
+	function ($scope, $routeParams, $filter, Survey, User, 
 			  Type, Section, Question) {
 		$scope.oid = $routeParams.oid;
 		$scope.status = $routeParams.status;
@@ -231,7 +235,7 @@ inquiryControllers
 		$scope.launch_survey = function() {
 			Survey.launch($scope.record, $scope.$parent.user).then(
 				function(response) {
-					$location.path('/survey/response/'+response.id+'/');
+					$scope.$parent.take_survey(response);
 				},
 				function(error) {
 					$scope.$parent.toast(error.detail);
@@ -242,11 +246,11 @@ inquiryControllers
 }])
 
 .controller('ResponseOverviewController', 
-		['$scope', '$http', '$routeParams', '$location', '$filter', '$q',
-		 'Survey', 'User', 'Type', 'Response', 'ResponseSection', 
+		['$scope', '$http', '$routeParams', '$filter', '$q',
+		 '$mdDialog', 'Survey', 'User', 'Type', 'Response', 'ResponseSection', 
 		 'QuestionResponse', 'Status',
-		function ($scope, $http, $routeParams, $location, $filter, $q,
-				  Survey, User, Type, Response, ResponseSection,
+		function ($scope, $http, $routeParams, $filter, $q,
+				  $mdDialog, Survey, User, Type, Response, ResponseSection,
 				  QuestionResponse, Status) {
 			$scope.status = $routeParams.status;
 			$scope.oid = $routeParams.oid;
@@ -257,7 +261,16 @@ inquiryControllers
 			// since our fields need a bind field currently
 			$scope._date = null;
 			$scope.due_date = null;
-
+			$scope.meta = null;
+			Response.meta($scope.oid).then(
+				function(data) {
+					$scope.meta = data;
+				},
+				function(err) {
+					$scope.$parent.toast(err.detail || 
+										 'Unable to get metadata');
+				}
+			);
 			Response.get($scope.oid)
 				.then(Response.include([{field: 'survey',
 					                     service: Survey},
@@ -317,8 +330,137 @@ inquiryControllers
 			});
 			
 			$scope.launch_response = function() {
-				
-				
+				$scope.$parent.take_survey($scope.record);
 			}
-	   
+			
+			$scope.delete_response = function() {
+				var confirm = $mdDialog.confirm()
+			      .content('Delete '+$scope.record.survey.name+' response?')
+			      .ariaLabel('Confirm delete')
+			      .ok('Confirm')
+			      .cancel('Cancel');
+				$mdDialog.show(confirm).then(
+					function() {
+						Response.delete($scope.record).then(
+							function() {
+								$scope.$parent.go_home();
+							},
+							function(err) {
+								$scope.$parent.toast(err.detail 
+													|| 'Unable to delete');
+							}
+						);
+					}, 
+					function() {
+						// cancel
+					}
+				);
+			}
+}])
+
+.controller('ResponseController', 
+		['$scope', '$routeParams', 'Survey', 'Response', 'ResponseSection', 
+		 'QuestionResponse', 'Section', 'Question',
+		function ($scope, $routeParams, Survey, Response, 
+				  ResponseSection, QuestionResponse, Section, Question) {
+			$scope.record = null;
+			$scope.oid = $routeParams.oid;
+			$scope.$parent.select('progress.'+$scope.oid);
+			$scope.sections = null;
+			$scope.section_lookup = {};
+			
+			Response.get($scope.oid)
+				.then(Response.include([{field: 'survey',
+				                         service: Survey},
+				                   ]))
+				.then(
+					function(record) {
+						$scope.record = record;
+						$scope.$parent.active_record = record;
+					},
+					function(error) {
+		   				$scope.$parent.toast(error.detail);
+					}
+				);
+			
+			ResponseSection.list({response: $scope.oid})
+			.then(ResponseSection.list_include([{field: 'survey_section',
+											service: Section},
+				                   ]))
+			.then(
+				function(records) {
+					for (var i in records) {
+						records[i]._questions = [];
+						var id = records[i].id.toString();
+						$scope.section_lookup[id] = records[i];
+					}
+					$scope.sections = records;
+					$scope.sections = $scope.sections.sort(function(a,b){
+							return (a.order || 1) - (b.order || 1);
+						});
+					$scope.$parent.sections = $scope.sections;
+				},
+				function(error) {
+	   				$scope.$parent.toast(error.detail);
+				}
+			).then(
+				function() {
+					QuestionResponse.list({response: $scope.oid})
+					.then(QuestionResponse.list_include([{field: 'question',
+														service: Question},
+				                   ]))
+					.then(
+						function(records) {
+							for (var i in records) {
+								var id = records[i].section.toString();
+								if (!$scope.section_lookup[id]._questions) {
+									$scope.section_lookup[id]._questions = [];
+								}
+								$scope.section_lookup[id]
+									._questions.push(records[i]);
+							}
+							for (var id in $scope.section_lookup) {
+								$scope.section_lookup[id]._questions.sort(
+									function(a,b){
+										return (a.order || 1) - (b.order || 1);
+									}
+								);
+								var partial = false;
+								var missing = false;
+								for (var i in $scope.section_lookup[id]
+												._questions) {
+									var q = $scope.section_lookup[id]
+												._questions[i];
+									if (q.answer) {
+										partial = true;
+									} else 
+										missing = true;
+									}
+								}
+								if (partial && !missing) {
+									$scope.section_lookup[id]
+													._completed = true;
+									$scope.section_lookup[id]
+													._partial = true;
+								} else if (partial && missing) {
+									$scope.section_lookup[id]
+													._completed = false;
+									$scope.section_lookup[id]
+													._partial = true;
+								} else if (partial && missing) {
+									$scope.section_lookup[id]
+												._completed = false;
+									$scope.section_lookup[id]
+												._partial = false;
+								}
+				}
+								
+							}
+						},
+						function(error) {
+			   				$scope.$parent.toast(error.detail);
+						}
+					);
+				}
+			);
 }]);

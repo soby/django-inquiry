@@ -1,5 +1,5 @@
 from rest_framework.viewsets import ModelViewSet
-from django_filters import FilterSet, MethodFilter
+from django_filters import MethodFilter
 from django.contrib.auth import get_user_model
 from django.db.models import Q
 
@@ -11,6 +11,7 @@ from rest_framework.permissions import BasePermission
 
 from .....core.api.v1.views import base
 from .....core.utils.auth import make_perm, make_global_perm
+from .....core.utils import filters
 from .....core.auth import permissions
 
 from ..serializers import survey
@@ -30,7 +31,7 @@ class TypeViewSet(base.BaseAPIViewMixin, ModelViewSet):
     queryset = serializer_class.Meta.model.objects.none()
 
 
-class SurveyFilter(FilterSet):
+class SurveyFilter(filters.BaseFilterSet):
     no_responses_for = MethodFilter(action='exclude_response_user')
 
     class Meta:
@@ -50,6 +51,7 @@ class SurveyLauchPermission(BasePermission):
     
     def has_object_permission(self, request, view, obj):
         return request.user.has_perm(make_perm(obj,'view'), obj)
+
             
 class SurveyViewSet(base.BaseAPIViewMixin, ModelViewSet):
     serializer_class = survey.SurveySerializer
@@ -80,14 +82,18 @@ class SurveyViewSet(base.BaseAPIViewMixin, ModelViewSet):
         return Response(survey.ResponseSerializer(resp).data) 
         
         
+class SectionFilter(filters.BaseFilterSet):
+    class Meta:
+        model = survey.SectionSerializer.Meta.model
+        fields = ['pk__in', 'parent', 'name', 'owner']
 
-
-class SectionViewSet(base.BaseAPIViewMixin, ModelViewSet):
+    
+class SectionViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin, ModelViewSet):
     serializer_class = survey.SectionSerializer
     # Required for DjangoObjectPermissions
     queryset = serializer_class.Meta.model.objects.none()
     permission_classes = [permissions.OwnedModelPermissions, ] 
-    filter_fields = ['parent', 'name', 'description', 'owner',]       
+    filter_class = SectionFilter       
 
 
 class ResourceViewSet(base.BaseAPIViewMixin, ModelViewSet):
@@ -97,16 +103,24 @@ class ResourceViewSet(base.BaseAPIViewMixin, ModelViewSet):
     permission_classes = [permissions.OwnedModelPermissions, ]
 
 
-class QuestionViewSet(base.BaseAPIViewMixin, ModelViewSet):
+class QuestionFilter(filters.BaseFilterSet):
+    class Meta:
+        model = survey.QuestionSerializer.Meta.model
+        fields = ['pk__in', 'parent', 'section', 'owner', 'question',
+                  'question_type']
+        
+
+class QuestionViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin,
+                       ModelViewSet):
     serializer_class = survey.QuestionSerializer
     # Required for DjangoObjectPermissions
     queryset = serializer_class.Meta.model.objects.none()
     permission_classes = [permissions.OwnedModelPermissions, ]
-    filter_fields = ['parent', 'section', 'owner', 'question', 'question_type'
-                     ]
+    filter_class = QuestionFilter
     
 
-class QuestionChoiceViewSet(base.BaseAPIViewMixin, ModelViewSet):
+class QuestionChoiceViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin,
+                             ModelViewSet):
     serializer_class = survey.QuestionChoiceSerializer
     # Required for DjangoObjectPermissions
     queryset = serializer_class.Meta.model.objects.none()
@@ -128,13 +142,13 @@ class ResponseViewSet(base.BaseAPIViewMixin, ModelViewSet):
     queryset = serializer_class.Meta.model.objects.none()
 
 
-class ResponseSectionFilter(FilterSet):
+class ResponseSectionFilter(filters.BaseFilterSet):
     questionresponse__null_answer = MethodFilter(action='handle_no_answer')
     
     class Meta:
         model = survey.ResponseSectionSerializer.Meta.model
         fields = ['survey', 'response', 'survey_section',
-                  'questionresponse__null_answer']
+                  'questionresponse__null_answer', 'pk__in']
     
     def handle_no_answer(self, queryset, value):
         if value == False or value == 'False':
@@ -143,8 +157,12 @@ class ResponseSectionFilter(FilterSet):
         else:  
             return queryset.filter(Q(questionresponse__answer__isnull=True) |
                                     Q(questionresponse__answer=''))
+    
+    
+        
             
-class ResponseSectionViewSet(base.BaseAPIViewMixin, ModelViewSet):
+class ResponseSectionViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin,
+                             ModelViewSet):
     serializer_class = survey.ResponseSectionSerializer
     # Required for DjangoObjectPermissions
     queryset = serializer_class.Meta.model.objects.none()
@@ -152,7 +170,7 @@ class ResponseSectionViewSet(base.BaseAPIViewMixin, ModelViewSet):
     filter_class = ResponseSectionFilter
 
 
-class QuestionResponseFilter(FilterSet):
+class QuestionResponseFilter(filters.BaseFilterSet):
     null_answer = MethodFilter(action='handle_no_answer')
     
     class Meta:
@@ -169,7 +187,8 @@ class QuestionResponseFilter(FilterSet):
                                     Q(answer=''))
 
     
-class QuestionResponseViewSet(base.BaseAPIViewMixin, ModelViewSet):
+class QuestionResponseViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin,
+                              ModelViewSet):
     serializer_class = survey.QuestionResponseSerializer
     # Required for DjangoObjectPermissions
     queryset = serializer_class.Meta.model.objects.none()

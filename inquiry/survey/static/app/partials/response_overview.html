@@ -35,7 +35,8 @@
       <md-content layout-margin>
           <md-divider></md-divider>
           <md-content layout-margin layout="row" layout-align="end center">
-               <md-button ng-if="status != 'completed'" class="md-primary" ng-click="launch_response()">Resume</md-button>
+               <md-button ng-if="meta.permissions.change" class="md-primary" ng-click="launch_response()">Resume</md-button>
+               <md-button ng-if="meta.permissions.delete" class="md-warn" ng-click="delete_response()">Delete</md-button>
           </md-content>
       </md-content>  
     </div>

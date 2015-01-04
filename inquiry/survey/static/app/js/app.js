@@ -3,6 +3,7 @@
 // Declare app level module which depends on views, and components
 var app = angular.module('inquiry', [
   'ngRoute', 'inquiryControllers', 'ngAnimate', 'ngMaterial', 'ngSanitize',
+  'truncate'
 ]);
 
 app.config(['$routeProvider', '$mdThemingProvider', 
@@ -26,6 +27,11 @@ app.config(['$routeProvider', '$mdThemingProvider',
 		.when('/survey/response/overview/:status/:oid/', {
 			templateUrl: '/static/app/partials/response_overview.html',
 			controller: 'ResponseOverviewController'
+		})
+		
+		.when('/survey/:oid/', {
+			templateUrl: '/static/app/partials/response.html',
+			controller: 'ResponseController'
 		})
 		
 		.otherwise({redirectTo: '/login'});

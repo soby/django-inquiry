@@ -6,7 +6,6 @@ from django.contrib.auth import get_user_model
 from .....core.api.v1.serializers.base import (
     BaseModelSerializer, FieldRestrictingMixin,
     USER_OWNED_READ_ONLY_FIELDS, USER_OWNED_QUERYSET_RESTRICTIONS)
-from .....core.api.v1.serializers.user import UserSerializer
 
 from . import base
 from .... import models
@@ -165,8 +164,8 @@ class ResponseSectionSerializer(ResponseOwnedMixin, FieldRestrictingMixin,
     class Meta:
         model = models.ResponseSection
         fields = base.RESPONSE_OWNED_READ_ONLY_FIELDS +\
-            ['response', 'survey_section']
-        read_only_fields = base.RESPONSE_OWNED_READ_ONLY_FIELDS
+            ['response', 'order', 'survey_section']
+        read_only_fields = base.RESPONSE_OWNED_READ_ONLY_FIELDS + ['order']
 
 
 class QuestionResponseSerializer(ResponseOwnedMixin, FieldRestrictingMixin, 
@@ -185,10 +184,10 @@ class QuestionResponseSerializer(ResponseOwnedMixin, FieldRestrictingMixin,
     class Meta:
         model = models.QuestionResponse
         fields = base.RESPONSE_SECTION_OWNED_READ_ONLY_FIELDS +\
-            ['section', 'question', 'answer']
+            ['section', 'question', 'answer', 'order']
         read_only_fields =\
             base.RESPONSE_SECTION_OWNED_READ_ONLY_FIELDS +\
-            []
+            ['order']
 
 
 class QuestionResponseResourceSerializer(ResponseOwnedMixin, 

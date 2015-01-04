@@ -19,6 +19,7 @@
     <!-- App Dependencies -->
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-route.min.js"></script>
     <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.3.6/angular-sanitize.min.js"></script>
+    <script src="/static/app/packages/angular-truncate/truncate.js"></script>
     
     <link rel="stylesheet" href="/static/app/css/app.css">
     <script src="/static/app/js/utils.js"></script>
@@ -58,21 +59,21 @@
                           <span>In Progress</span>
                       </a>
                       <button md-highlight="1" ng-show="is_selected('surveys.saved.')" class="menu-item menu-sub-item md-menu-item" md-ink-ripple="#bbb">
-                          {{ active_record.survey.name }}
+                          {{ active_record.survey.name | characters:29: true }}
                       </button>
                       
                       <a md-highlight="is_selected('surveys.available')" href="#/surveys/available/" ng-show="is_selected('surveys')" class="ng-hide menu-item menu-title md-menu-item" md-ink-ripple="#bbb">
                           <span>Available</span>
                       </a>
                       <button md-highlight="1" ng-show="is_selected('surveys.available.')" class="menu-item menu-sub-item md-menu-item" md-ink-ripple="#bbb">
-                          {{ active_record.name }}
+                          {{ active_record.name | characters:29: true }}
                       </button>
                       
                       <a md-highlight="is_selected('surveys.completed')" href="#/surveys/completed/" ng-show="is_selected('surveys')" class="ng-hide menu-item menu-title md-menu-item" md-ink-ripple="#bbb">
                           <span>Completed</span>
                       </a>
                       <button md-highlight="1" ng-show="is_selected('surveys.completed.')" class="menu-item menu-sub-item md-menu-item" md-ink-ripple="#bbb">
-                          {{ active_record.survey.name }}
+                          {{ active_record.survey.name | characters:29: true }}
                       </button>
                   </div>
                   
@@ -81,18 +82,19 @@
                           In Progress
                       </button>
                 
-                      <a ng-show="is_selected('progress')" ng-repeat="section in sections" class="menu-item menu-sub-item md-menu-item" md-ink-ripple="#bbb">
-                          <span>{{section.name}}</span>
+                      <a ng-show="is_selected('progress')" class="menu-item menu-sub-item md-menu-item" md-ink-ripple="#bbb">
+                          <span>{{ active_record.survey.name | characters:29: true }}</span>
                       </a>
                   </div>
                   
-                  <div ng-show="response != null" class="ng-hide" ng-repeat="section in sections">
+                  <md-divider ng-if="is_selected('progress.')">&nbsp;</md-divider>
+                  <div ng-show="is_selected('progress.')" class="ng-hide" ng-repeat="section in sections">
                       <button class="menu-item menu-title md-menu-item" md-ink-ripple="#bbb">
-                          {{section.name}}
+                          {{section.survey_section.name | characters:29: true }}
                       </button>
-                
-                      <a ng-repeat="quesiton in section.questionresponse_set" class="menu-item menu-sub-item md-menu-item" md-ink-ripple="#bbb">
-                          <span>{{question.name}}</span>
+                      
+                      <a ng-repeat="question in section._questions" class="menu-item menu-sub-item md-menu-item" md-ink-ripple="#bbb">
+                          <span>{{question.question.question | characters:29: true }}</span>
                       </a>
                   </div>
 		          

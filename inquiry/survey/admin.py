@@ -1,4 +1,5 @@
 from django.contrib import admin
+from ordered_model.admin import OrderedModelAdmin
 from . import models
 
 class StatusAdmin(admin.ModelAdmin): pass
@@ -10,8 +11,9 @@ class QuestionAdmin(admin.ModelAdmin): pass
 class QuestionChoiceAdmin(admin.ModelAdmin): pass
 class QuestionResourceAdmin(admin.ModelAdmin): pass
 class ResponseAdmin(admin.ModelAdmin): pass
-class ResponseSectionAdmin(admin.ModelAdmin): pass
-class QuestionResponseAdmin(admin.ModelAdmin): pass
+class ResponseSectionAdmin(OrderedModelAdmin): pass
+class QuestionResponseAdmin(OrderedModelAdmin):
+    list_display = ('question', 'order','move_up_down_links')
 class QuestionResponseResourceAdmin(admin.ModelAdmin): pass
      
 admin.site.register(models.Status, StatusAdmin)
