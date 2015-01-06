@@ -101,7 +101,52 @@ div.app-menu-button {
 .app-overview-form md-input-group.tall > textarea {
     height: 105px; 
 }
-    
+
+#app-questionresponse-footer md-content {
+	background: #E0E0E0!important;
+}
+
+#app-questionresponse-footer .md-button {
+    text-transform: none;	
+}
+
+#app-questionresponse-footer .md-button.app-finish-button {
+    text-transform: uppercase;   
+}
+
+#app-questionresponse-footer .app-response-nav-label {
+	font-size: .8em;
+	margin: 0 0 0 0px;
+}
+
+#app-questionresponse-footer .app-response-previous-label {
+	text-align: left;
+}
+
+#app-questionresponse-footer .app-response-next-label {
+    text-align: right;
+}
+
+#app-questionresponse-footer .app-response-nav-text {
+    font-size: 1em;
+    margin: 0 0 0 0px;
+}
+
+#app-questionresponse-footer .md-icon-container {
+	background-repeat: no-repeat;
+    background-position: center;
+    background-size: 100%;  
+    width: 50px;
+}
+
+#app-questionresponse-footer .app-icon-prev {	
+    background-image: url('/static/app/img/icon-prev.png');
+}
+
+#app-questionresponse-footer .app-icon-next {   
+    background-image: url('/static/app/img/icon-next.png');
+}
+
 .ng-hide {
 	display: none;
 }
@@ -140,7 +185,7 @@ div.app-menu-button {
 .menu-item:hover {
   color: #999;
 }
-.menu-item:focus {
+.menu-item:focus, .menu-item.active {
   font-weight: bold;
 }
 .menu-item.menu-title {

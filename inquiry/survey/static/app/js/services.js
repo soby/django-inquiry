@@ -91,4 +91,10 @@ app.config(['$provide', function($provide) {
 									 $q);
 	}]); // provide.factory
 	
+	$provide.factory('QuestionChoice',['$http','$q', function($http, $q) { 
+		return create_basic_services('/api/v1/survey/questionchoice/', 
+				     				 $http,
+									 $q);
+	}]); // provide.factory
+	
 }]); // app.config

@@ -4,3 +4,4 @@ venv
 .pydevproject
 test.db
 mock_file*
+.DS_Store

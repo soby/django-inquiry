@@ -2,7 +2,8 @@ var inquiryControllers = angular.module('inquiryControllers', []);
 
 inquiryControllers
 .controller('MainController', ['$scope', '$http', '$browser', '$location', 
-                               '$mdSidenav', '$sanitize', '$mdToast', 'User',
+                               '$mdSidenav', '$sanitize', '$mdToast', 
+                               'User',
   function ($scope, $http, $browser, $location, $mdSidenav, $sanitize,
 		    $mdToast, User) {
     $scope.menu = {};
@@ -14,6 +15,10 @@ inquiryControllers
     $scope.response = null;
     $scope.sections = null;
     $scope.active_record = null; // overview
+    
+    // Used to hold selected items in menu after broadcast
+    $scope.selected_question = null;
+    $scope.selected_section = null;
     
     $scope.setSection = function(section) {
     	$scope.menu['currentSection'] = section;
@@ -28,6 +33,18 @@ inquiryControllers
     		return false;
     	}
     	return $scope._selected.indexOf(label) == 0;
+    }
+    
+    $scope.do_select_question = function(question) {
+    	// used to notify children
+    	$scope.selected_question = question;
+    	$scope.$broadcast('menu.question_selected');
+    	
+    }
+    $scope.do_select_section = function(section) {
+    	// used to notify children
+    	$scope.selected_section = section;
+    	$scope.$broadcast('menu.section_selected');
     }
     
     $scope.is_login = function() {
@@ -360,16 +377,253 @@ inquiryControllers
 
 .controller('ResponseController', 
 		['$scope', '$routeParams', 'Survey', 'Response', 'ResponseSection', 
-		 'QuestionResponse', 'Section', 'Question',
+		 'QuestionResponse', 'Section', 'Question', 'QuestionChoice',
 		function ($scope, $routeParams, Survey, Response, 
-				  ResponseSection, QuestionResponse, Section, Question) {
+				  ResponseSection, QuestionResponse, Section, Question,
+				  QuestionChoice) {
 			$scope.record = null;
 			$scope.oid = $routeParams.oid;
 			$scope.$parent.select('progress.'+$scope.oid);
 			$scope.sections = null;
+			$scope.quesitons = null;
 			$scope.section_lookup = {};
+			$scope.active_section = null;
+			$scope.active_question = null;
+			// for nav
+			$scope.next_question_obj = null;
+			$scope.previous_question_obj = null;
 			
-			Response.get($scope.oid)
+			$scope.$on('menu.question_selected', function(e) {
+				// $scope.selected_question is inherited
+				if ($scope.selected_question == $scope.active_question) {
+					return;
+				}
+				$scope.select_question($scope.selected_question);
+				$scope.select_section(
+					$scope.section_lookup[$scope.selected_question.section.toString()]
+					);
+			});
+			$scope.$on('menu.section_selected', function(e) {
+				// $scope.selected_section is inherited
+				if ($scope.selected_section == $scope.active_section) {
+					return;
+				}
+				$scope.select_section($scope.selected_section);
+				$scope.next_question();
+			});
+			
+			$scope.mark_section_completeness = function(section) {
+				var partial = false;
+				var missing = false;
+				for (var i=0; i<section._questions.length;i++) {
+					var q = section._questions[i];
+					if (q.answer) {
+						partial = true;
+					} else {
+						missing = true;
+					}
+				}
+				if (partial && !missing) {
+					section._completed = true;
+					section._partial = true;
+					section._not_started = false;
+				} else if (partial && missing) {
+					section._completed = false;
+					section._partial = true;
+					section._not_started = false;
+				} else if (!partial && missing) {
+					section._completed = false;
+					section._partial = false;
+					section._not_started = true;
+				}
+			}
+		
+			$scope.show_complete = function() {
+				debugger;
+			}
+			
+			$scope.select_section = function(section) {
+				$scope.active_section = section;
+				for (var i=0; i<$scope.sections.length;i++) {
+					$scope.sections[i]._selected = false;
+				}
+				section._selected = true;
+			}
+			
+			$scope.select_question = function(question) {
+		    	$scope.active_question = question;
+		    	if ($scope.active_question.section !=
+	    			$scope.active_section.id) {
+		    			$scope.select_section($scope.section_lookup[
+	    		               $scope.active_question.section.toString()                      
+	    		               		  ]);
+		    	}
+		    	$scope.next_question_obj = $scope.find_next_question(
+		    									$scope.active_section,
+		    									$scope.active_question
+		    							);
+		    	$scope.previous_question_obj = $scope.find_previous_question(
+						$scope.active_section,
+						$scope.active_question
+				);
+		    	
+		    	for (var i=0; i<$scope.questions.length;i++) {
+		    		$scope.questions[i]._selected = false;
+		    	}
+		    	question._selected = true;
+		    }
+			
+			$scope.find_next_section = function(section) {
+				if (!section) {
+					if ($scope.sections.length) {
+						return $scope.select_section($scope.sections[0]);
+					} else {
+						return null;
+					}
+					
+		    	} 
+				
+	    		for (var i=0; i<$scope.sections.length; i++) {
+	    			if ($scope.sections[i] == section) {
+	    				if (i == ($scope.sections.length - 1) ) {
+	    					return null;
+	    				} else {
+	    					return $scope.sections[i + 1];
+	    				}
+	    			} 
+		    	}
+			}
+			
+			$scope.find_previous_section = function(section) {
+				if (!section) {
+					if ($scope.sections.length) {
+						return $scope.select_section($scope.sections[0]);
+					} else {
+						return null;
+					}
+					
+		    	} 
+				
+	    		for (var i=0; i<$scope.sections.length; i++) {
+	    			if ($scope.sections[i] == section) {
+	    				if (i == 0) {
+	    					return null;
+	    				} else {
+	    					return $scope.sections[i - 1];
+	    				}
+	    			} 
+		    	}
+			}
+			
+		    $scope.next_section = function() {
+		    	var next = $scope.find_next_section($scope.active_section);
+		    	if (next) {
+		    		$scope.select_section(next);
+		    	}
+		    }
+		    
+		    $scope.previous_section = function() {
+		    	var next = $scope.find_previous_section($scope.active_section);
+		    	if (next) {
+		    		$scope.select_section(next);
+		    	}
+		    }
+		    
+		    $scope.find_next_question = function(section, question) {
+		    	if (section == null) {
+		    		return null;
+		    	}
+		    	
+		    	if (!section._questions.length) {
+		    		// No questions in this section. Skip
+		    		return $scope.find_next_question(
+		    				$scope.find_next_section(section),
+		    				null
+		    				);
+		    	} else if (question == null) {
+		    		// grab the first question
+		    		return section._questions[0];
+		    	}
+		    	
+		    	for (var i=0;i<section._questions.length;i++) {
+		    		if (section._questions[i] == 
+		    				question) {
+		    			if (i >= (section._questions.length - 1)){
+		    				// no more questions in this section
+		    				return $scope.find_next_question(
+		    						  $scope.find_next_section(section),
+		    						  null
+		    					   );
+		    			} else {
+		    				return section._questions[i+1]; 
+		    			}
+		    		}
+		    	}
+		    	// The active question isn't in this section
+		    	debugger;
+		    }
+		    
+		    $scope.find_previous_question = function(section, question) {
+		    	if (section == null) {
+		    		return null;
+		    	}
+		    	
+		    	if (!section._questions.length) {
+		    		// No questions in this section. Skip
+		    		return $scope.find_previous_question(
+		    				$scope.find_previous_section(section),
+		    				null
+		    				);
+		    	} else if (question == null) {
+		    		// grab the last question
+		    		return section._questions[section._questions.length-1];
+		    	}
+		    	
+		    	for (var i=0;i<section._questions.length;i++) {
+		    		if (section._questions[i] == 
+		    				question) {
+		    			if (i == 0){
+		    				// no earlier questions in this section
+		    				return $scope.find_previous_question(
+		    						  $scope.find_previous_section(section),
+		    						  null
+		    					   );
+		    			} else {
+		    				return section._questions[i-1]; 
+		    			}
+		    		}
+		    	}
+		    }
+	    	
+		    $scope.next_question = function() {
+		    	if ($scope.next_question_obj) {
+		    		$scope.select_question($scope.next_question_obj);
+		    	} else {
+		    		var next = $scope.find_next_question($scope.active_section,
+							  							$scope.active_question
+					 									)
+					if (next) {
+						$scope.select_question(next);
+					} else {
+						$scope.show_complete();
+					}
+		    			
+		    	}
+		    }
+		    
+		    $scope.previous_question = function() {
+		    	if ($scope.previous_question_obj) {
+		    		$scope.select_question($scope.previous_question_obj);
+		    	} else {
+		    		$scope.select_question(
+		    			$scope.find_previous_question($scope.active_section,
+		    									  $scope.active_question
+		    									 )
+		    							  );
+		    	}
+		    }
+		    
+		    Response.get($scope.oid)
 				.then(Response.include([{field: 'survey',
 				                         service: Survey},
 				                   ]))
@@ -389,7 +643,7 @@ inquiryControllers
 				                   ]))
 			.then(
 				function(records) {
-					for (var i in records) {
+					for (var i=0; i<records.length;i++) {
 						records[i]._questions = [];
 						var id = records[i].id.toString();
 						$scope.section_lookup[id] = records[i];
@@ -411,7 +665,9 @@ inquiryControllers
 				                   ]))
 					.then(
 						function(records) {
-							for (var i in records) {
+							$scope.questions = records;
+							
+							for (var i=0; i<records.length;i++) {
 								var id = records[i].section.toString();
 								if (!$scope.section_lookup[id]._questions) {
 									$scope.section_lookup[id]._questions = [];
@@ -425,40 +681,57 @@ inquiryControllers
 										return (a.order || 1) - (b.order || 1);
 									}
 								);
-								var partial = false;
-								var missing = false;
-								for (var i in $scope.section_lookup[id]
-												._questions) {
-									var q = $scope.section_lookup[id]
-												._questions[i];
-									if (q.answer) {
-										partial = true;
-									} else 
-										missing = true;
-									}
-								}
-								if (partial && !missing) {
-									$scope.section_lookup[id]
-													._completed = true;
-									$scope.section_lookup[id]
-													._partial = true;
-								} else if (partial && missing) {
-									$scope.section_lookup[id]
-													._completed = false;
-									$scope.section_lookup[id]
-													._partial = true;
-								} else if (partial && missing) {
-									$scope.section_lookup[id]
-												._completed = false;
-									$scope.section_lookup[id]
-												._partial = false;
-								}
-				}
+								$scope.mark_section_completeness(
+										$scope.section_lookup[id]
+								);
 								
 							}
+							
+
+							$scope.next_section(null);
+							$scope.next_question($scope.active_section, null);
+							
+							return records;
 						},
 						function(error) {
 			   				$scope.$parent.toast(error.detail);
+						}
+					).then(
+						function(records) {
+							var question_ids = [];
+							for (var i=0; i<records.length;i++) {
+							    if (question_ids.indexOf(
+							    		records[i].question.id) == -1) {
+							    	question_ids.push(records[i].question.id);
+							    }
+							}
+							// angular will send the same param multiple times
+							var qquery = '['+question_ids.toString()+']';
+							QuestionChoice.list({question__in:qquery})
+							    .then(
+							  	    function(choices) {
+							  	    	for (var i=0;i<choices.length;i++) {
+							  	    		var choice = choices[i];
+							  	    		for (var y=0;y<records.length;y++){
+							  	    			var rec = records[y];
+							  	    			if (choice.question ==
+							  	    				rec.question.id) {
+							  	    				if (!rec.question._choices){
+							  	    					rec.question._choices=[];
+							  	    				}
+							  	    				rec.question._choices.push(choice);
+							  	    			}
+							  	    		}
+							  	    	}
+							  	    	for (var y=0;y<records.length;y++){
+							  	    		var rec = records[y];
+							  	    		if (rec.question._choices) {
+							  	    			rec.question._choices =
+							  	    				rec.question._choices.sort(function(a,b) { a.order - b.order});
+							  	    		}
+							  	    	}
+							  	    }	  
+							    );
 						}
 					);
 				}

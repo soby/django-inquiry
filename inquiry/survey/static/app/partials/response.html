@@ -1,0 +1,56 @@
+<section class="app-container md-whiteframe-z1" layout="column">
+    <md-toolbar class="app-toolbar">
+        <div class="md-toolbar-tools">
+            <span class="md-flex">{{ active_section.survey_section.name }}</span>
+        </div>
+    </md-toolbar>
+    <md-content class="md-padding">
+	    <div class="app-questionresponse">
+	        <div class="app-questionresponse-question">
+	          <p>{{ active_question.question.question }}</p>
+	        </div>
+	        <div ng-hide="active_question.question._choices" class="app-questionresponse-answers">
+                 <p>{{ active_question.answer }}</p>
+            </div>
+            <md-content>
+            <md-radio-group ng-model="active_question.answer">
+		        <md-radio-button ng-repeat="d in active_question.question._choices" ng-value="d.value" aria-label="{{ d.name }}">
+		            {{ d.name }}
+		        </md-radio-button>
+		    </md-radio-group>
+		    <md-content>
+	    </div>
+	    
+	</md-content>
+	<md-toolbar class="app-toolbar md-primary" id="app-questionresponse-footer">
+        <md-content layout-margin layout="row" layout-align="space-between center">
+               <div ng-show="previous_question_obj == null">&nbsp;</div>
+               <md-button ng-show="previous_question_obj" ng-click="previous_question()" class="md-grid-item-content" aria-label="previous" layout="row" layout-align="start center">
+                    <div class="md-icon-container app-icon-prev">&nbsp;</div>
+	                <div>
+	                   <p class="app-response-nav-label app-response-previous-label">Previous: </p>
+	                   <p class="app-response-nav-text app-response-previous-text">
+	                     {{ previous_question_obj.question.question | characters:25: true }}
+	                   </p>
+	                </div>
+               </md-button>
+           
+               <md-button ng-show="next_question_obj" ng-click="next_question()" class="md-grid-item-content" aria-label="next" layout="row" layout-align="end center">
+                    <div>
+                       <p class="app-response-nav-label app-response-next-label">Next: </p>
+                       <p class="app-response-nav-text app-response-next-text">
+                         {{ next_question_obj.question.question | characters:25: true }}
+                       </p>
+                    </div>
+                    <div class="md-icon-container app-icon-next">&nbsp;</div>
+               </md-button>
+               <md-button ng-show="active_question && (next_question_obj == null)" ng-click="Complete()" class="ng-hide md-primary md-grid-item-content app-finish-button" aria-label="next" layout="row" layout-align="end center">
+                    <div>
+                       <p>Finish</p>
+                    </div>
+                    <div class="md-icon-container app-icon-next">&nbsp;</div>
+               </md-button>
+        </md-content>
+    </md-toolbar>
+	
+</section>   

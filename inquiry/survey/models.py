@@ -287,7 +287,7 @@ class Response(core_models.UserOwnedModel):
                                                 owner=owner,
                                                 created_by=created_by
                                                 )
-            for question in survey.question_set.all():
+            for question in section.question_set.all():
                 QuestionResponse.create_from_question(
                                         question,
                                         section=sec, 

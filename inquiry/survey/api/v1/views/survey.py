@@ -1,3 +1,5 @@
+import json
+
 from rest_framework.viewsets import ModelViewSet
 from django_filters import MethodFilter
 from django.contrib.auth import get_user_model
@@ -119,6 +121,20 @@ class QuestionViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin,
     filter_class = QuestionFilter
     
 
+class QuestionChoiceFilter(filters.BaseFilterSet):
+    question__in = MethodFilter(action="handle_question_in")
+    
+    class Meta:
+        model = survey.QuestionChoiceSerializer.Meta.model
+        fields = ['pk__in', 'question', 'question__in', 'name', 'value', 
+                  'help_text', 'order', 'parent', 'section', 'owner']
+        
+    def handle_question_in(self, queryset, value):
+        l = json.loads(value)
+        if l:
+            return queryset.filter(question__in=l)
+        return queryset
+        
 class QuestionChoiceViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin,
                              ModelViewSet):
     serializer_class = survey.QuestionChoiceSerializer
