@@ -9,23 +9,50 @@
 	        <div class="app-questionresponse-question">
 	          <p>{{ active_question.question.question }}</p>
 	        </div>
-	        <div ng-hide="active_question.question._choices" class="app-questionresponse-answers">
-                 <p>{{ active_question.answer }}</p>
-            </div>
-            <md-content>
-            <md-radio-group ng-model="active_question.answer">
-		        <md-radio-button ng-repeat="d in active_question.question._choices" ng-value="d.value" aria-label="{{ d.name }}">
-		            {{ d.name }}
-		        </md-radio-button>
-		    </md-radio-group>
-		    <md-content>
+	        <div class="app-questionresponse-answers">
+	            <p class="app-questionresponse-answer-label">Answer:</p> 	        
+	            <p ng-show="active_question.question.question_type == 'file'" class="ng-hide">
+	               File response. Please add attachment(s) below.
+	            </p>
+                <input ng-show="active_question.question.question_type == 'text'" ng-model="active_question.answer" class="ng-hide app-questionresponse-text"></input>
+                <textarea layout-margin ng-show="active_question.question.question_type == 'textarea'" ng-model="active_question.answer" class="ng-hide app-questionresponse-textarea"></textarea>
+                
+                <md-content class="ng-hide app-questionresponse-boolean" ng-show="active_question.question.question_type == 'boolean'">
+                    <md-radio-group ng-model="active_question.answer">
+                        <md-radio-button value="true" aria-label="True">
+                            True
+                        </md-radio-button>
+                        <md-radio-button value="false" aria-label="False">
+                            False
+                        </md-radio-button>
+                    </md-radio-group>
+                </md-content>
+                
+	            <md-content class="ng-hide app-questionresponse-choice" ng-show="active_question.question.question_type == 'choice'">
+		            <md-radio-group ng-model="active_question.answer">
+				        <md-radio-button ng-repeat="d in active_question.question._choices" ng-value="d.value" aria-label="{{ d.name }}">
+				            {{ d.name }}
+				        </md-radio-button>
+				    </md-radio-group>
+			    </md-content>
+			    <md-content class="ng-hide app-questionresponse-multichoice" ng-init="d._selected=false" ng-show="active_question.question.question_type == 'multiple choice'">
+                     <md-checkbox ng-model="d._selected" ng-repeat="d in active_question.question._choices" aria-label="{{ d.name }}">
+                         {{ d.name }}
+                     </md-checkbox>
+                </md-content>
+			</div>
+			<md-divider>&nbsp;</md-divider>
+			<div class="app-questionresponse-resources">
+			    <p class="app-questionresponse-resource-label">Attachments:</p>
+			    <input type="file" ng-model="active_resource"></input>
+			</div>
 	    </div>
 	    
 	</md-content>
 	<md-toolbar class="app-toolbar md-primary" id="app-questionresponse-footer">
         <md-content layout-margin layout="row" layout-align="space-between center">
                <div ng-show="previous_question_obj == null">&nbsp;</div>
-               <md-button ng-show="previous_question_obj" ng-click="previous_question()" class="md-grid-item-content" aria-label="previous" layout="row" layout-align="start center">
+               <md-button ng-show="previous_question_obj" ng-click="process_answer('previous')" class="md-grid-item-content" aria-label="previous" layout="row" layout-align="start center">
                     <div class="md-icon-container app-icon-prev">&nbsp;</div>
 	                <div>
 	                   <p class="app-response-nav-label app-response-previous-label">Previous: </p>
@@ -35,7 +62,7 @@
 	                </div>
                </md-button>
            
-               <md-button ng-show="next_question_obj" ng-click="next_question()" class="md-grid-item-content" aria-label="next" layout="row" layout-align="end center">
+               <md-button ng-show="next_question_obj" ng-click="process_answer('next')" class="md-grid-item-content" aria-label="next" layout="row" layout-align="end center">
                     <div>
                        <p class="app-response-nav-label app-response-next-label">Next: </p>
                        <p class="app-response-nav-text app-response-next-text">

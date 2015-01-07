@@ -142,8 +142,8 @@ class Section(core_models.UserOwnedModel, OrderedModel):
     order_with_respect_to = 'parent'
     
     def __unicode__(self):
-        return '<{0}({1}):{2} {3}>'.format(self.__class__.__name__, 
-                    self.org_id, self.id, self.parent.name)
+        return '{0}(org:{1},pk:{2},parent:{3}): {4}'.format(self.__class__.__name__, 
+                    self.org_id, self.id, self.parent.name, self.name)
     def __str__(self):
         return self.__unicode__().encode('utf-8')
 
@@ -158,7 +158,7 @@ class SectionOwnedModel(core_models.UserOwnedModel):
         abstract = True
     
     def __unicode__(self):
-        return '<{0}({1}):{2} {3}>'.format(self.__class__.__name__, 
+        return '{0}(org:{1},pk:{2},sec:{3}): '.format(self.__class__.__name__, 
                     self.org_id, self.id, self.section.name)
     def __str__(self):
         return self.__unicode__().encode('utf-8')
@@ -203,6 +203,9 @@ class Question(SectionOwnedModel,OrderedModel):
     
     order_with_respect_to = 'section'
     
+    def __unicode__(self):
+        return super(Question, self).__unicode__()+self.question
+    
     def save(self,*args,**kwargs):
         if not self.pk:
             self.identifier = uuid4().hex
@@ -238,6 +241,9 @@ class QuestionChoice(SectionOwnedModel, OrderedModel):
     help_text = models.CharField(max_length=1024, null=True, blank=True)
     
     order_with_respect_to = 'question'
+    
+    def __unicode__(self):
+        return super(QuestionChoice, self).__unicode__()+self.name
 
 
 class QuestionResource(ResourceMixin,SectionOwnedModel):
@@ -359,11 +365,21 @@ class ResponseSectionOwnedModel(ResponseOwnedModel):
     
     
 class QuestionResponse(ResponseSectionOwnedModel, OrderedModel):
+    ATTACHED_FILE_ANSWER = '__attached'
+    
     question = models.ForeignKey(Question)
     answer = models.TextField(null=True, blank=True)
     
     order_with_respect_to = 'section'
     
+    def save(self, *args, **kwargs):
+        if self.question.question_type == Question.TYPE_FILE:
+            if self.questionresponseresource_set.all().count():
+                self.answer = self.ATTACHED_FILE_ANSWER
+            else:
+                self.answer = None
+        return super(QuestionResponse, self).save(*args,**kwargs)
+        
     @classmethod
     def create_from_question(cls, question, section, survey, response, 
                              order, owner, created_by=None):

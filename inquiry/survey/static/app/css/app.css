@@ -102,6 +102,16 @@ div.app-menu-button {
     height: 105px; 
 }
 
+.app-questionresponse-textarea {
+	width:90%;
+	height: 200px;
+}
+
+p.app-questionresponse-answer-label {
+    margin-bottom: 0px;
+    font-style: italic;	
+}
+
 #app-questionresponse-footer md-content {
 	background: #E0E0E0!important;
 }

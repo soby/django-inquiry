@@ -376,16 +376,16 @@ inquiryControllers
 }])
 
 .controller('ResponseController', 
-		['$scope', '$routeParams', 'Survey', 'Response', 'ResponseSection', 
+		['$scope', '$routeParams', '$q', 'Survey', 'Response', 'ResponseSection', 
 		 'QuestionResponse', 'Section', 'Question', 'QuestionChoice',
-		function ($scope, $routeParams, Survey, Response, 
+		function ($scope, $routeParams, $q, Survey, Response, 
 				  ResponseSection, QuestionResponse, Section, Question,
 				  QuestionChoice) {
 			$scope.record = null;
 			$scope.oid = $routeParams.oid;
 			$scope.$parent.select('progress.'+$scope.oid);
 			$scope.sections = null;
-			$scope.quesitons = null;
+			$scope.questions = null;
 			$scope.section_lookup = {};
 			$scope.active_section = null;
 			$scope.active_question = null;
@@ -409,6 +409,8 @@ inquiryControllers
 					return;
 				}
 				$scope.select_section($scope.selected_section);
+				$scope.next_question_obj=null;
+				$scope.active_question=null;
 				$scope.next_question();
 			});
 			
@@ -476,7 +478,7 @@ inquiryControllers
 			$scope.find_next_section = function(section) {
 				if (!section) {
 					if ($scope.sections.length) {
-						return $scope.select_section($scope.sections[0]);
+						return $scope.sections[0];
 					} else {
 						return null;
 					}
@@ -492,6 +494,7 @@ inquiryControllers
 	    				}
 	    			} 
 		    	}
+	    		debugger;
 			}
 			
 			$scope.find_previous_section = function(section) {
@@ -623,6 +626,78 @@ inquiryControllers
 		    	}
 		    }
 		    
+		    $scope.process_answer = function(direction) {
+		    	var prom = null;
+		    	var t = $scope.active_question.question.question_type;
+		    	if (t == 'multiple choice'){
+		    		var selected = [];
+		    		for (var i in $scope.active_question.question._choices) {
+		    			var c = $scope.active_question.question._choices[i];
+		    			if (c._selected) {
+		    				selected.push(c.value);
+		    			}
+		    		}
+		    		selected = selected.sort().join(';');
+		    		if (selected == $scope.active_question._old_answer) {
+		    			var d = $q.defer();
+			    		d.resolve();
+			    		prom = d.promise;
+		    		} else {
+			    		prom = QuestionResponse.update($scope.active_question,
+			    				  {answer: selected}
+	    					   );
+			    		var q = $scope.active_question;
+			    		prom.then(
+						   		function(data) {
+						   			// we overwrite this with question objects
+						   			delete data.question;
+						   			angular.extend(q, data);
+						   		}
+	    				);
+		    		}
+		    	} else if (t == 'file') {
+		    		// the server handles this one by setting a token
+		    		// text value in the answer field
+		    		var d = $q.defer();
+		    		d.resolve();
+		    		prom = d.promise;
+		    	}	
+		    	else {
+		    		if ($scope.active_question.answer == 
+		    					$scope.active_question._old_answer) {
+		    			var d = $q.defer();
+			    		d.resolve();
+			    		prom = d.promise;
+		    		} else {
+			    		prom = QuestionResponse.update($scope.active_question,
+			    						{answer: $scope.active_question.answer}
+					    		);
+			    		var q = $scope.active_question;
+			    		prom.then(
+						   		function(data) {
+						   			//we overwrite this with question objects
+						   			delete data.question;
+						   			angular.extend(q, data);
+						   		}
+	    				);
+		    		}
+		    	} 
+		    	prom.then(
+		    			function() {
+		    				if (direction == 'next') {
+		    					$scope.next_question();
+		    				} else {
+		    					$scope.previous_question();
+		    				}
+		    			},
+		    			function(err) {
+		    				$scope.$parent.toast(err.detail);
+		    			}
+		    	);
+		    	
+		    	
+		    }
+		    
 		    Response.get($scope.oid)
 				.then(Response.include([{field: 'survey',
 				                         service: Survey},
@@ -668,6 +743,7 @@ inquiryControllers
 							$scope.questions = records;
 							
 							for (var i=0; i<records.length;i++) {
+								records[i]._old_answer = records[i].answer;
 								var id = records[i].section.toString();
 								if (!$scope.section_lookup[id]._questions) {
 									$scope.section_lookup[id]._questions = [];
@@ -688,7 +764,7 @@ inquiryControllers
 							}
 							
 
-							$scope.next_section(null);
+							$scope.next_section();
 							$scope.next_question($scope.active_section, null);
 							
 							return records;
@@ -710,16 +786,30 @@ inquiryControllers
 							QuestionChoice.list({question__in:qquery})
 							    .then(
 							  	    function(choices) {
-							  	    	for (var i=0;i<choices.length;i++) {
-							  	    		var choice = choices[i];
-							  	    		for (var y=0;y<records.length;y++){
-							  	    			var rec = records[y];
+							  	    	for (var y=0;y<records.length;y++){
+						  	    			var rec = records[y];
+						  	    			
+						  	    			// only used for multiple choice
+						  	    			var selected = [];
+						  	    			if (rec.answer) {
+						  	    				selected = rec.answer.split(';');
+						  	    			}
+						  	    			
+								  	    	for (var i=0;i<choices.length;i++) {
+								  	    		var choice = choices[i];
 							  	    			if (choice.question ==
 							  	    				rec.question.id) {
 							  	    				if (!rec.question._choices){
 							  	    					rec.question._choices=[];
 							  	    				}
 							  	    				rec.question._choices.push(choice);
+							  	    				if (rec.question.question_type == 'multiple choice') {
+							  	    					for (var j=0;j<selected.length;j++) {
+							  	    						if (selected[j] == choice.value) {
+							  	    							choice._selected = true;
+							  	    						}
+							  	    					}
+							  	    				}
 							  	    			}
 							  	    		}
 							  	    	}
