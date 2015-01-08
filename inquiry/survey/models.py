@@ -377,12 +377,31 @@ class QuestionResponse(ResponseSectionOwnedModel, OrderedModel):
     
     order_with_respect_to = 'section'
     
-    def save(self, *args, **kwargs):
-        if self.question.question_type == Question.TYPE_FILE:
+    def resources_change_answer(self):
+        """
+            Whether the answer field is dependant on the presence
+            of resources
+        """
+        return self.question.question_type == Question.TYPE_FILE
+    
+    def resource_answer(self):
+        """
+            Answer based on the resources. Used for file question type
+        """
+        if not self.resources_change_answer():
+            raise Exception('Resources do not change this question response')
+    
+        else:
             if self.questionresponseresource_set.all().count():
-                self.answer = self.ATTACHED_FILE_ANSWER
+                return self.ATTACHED_FILE_ANSWER
             else:
-                self.answer = None
+                return None
+            
+                
+    def save(self, *args, **kwargs):
+        if self.resources_change_answer():
+            self.answer = self.resource_answer()
+            
         return super(QuestionResponse, self).save(*args,**kwargs)
         
     @classmethod
@@ -402,3 +421,27 @@ class QuestionResponse(ResponseSectionOwnedModel, OrderedModel):
 
 class QuestionResponseResource(ResourceMixin, ResponseSectionOwnedModel):
     question_response = models.ForeignKey(QuestionResponse)
+    
+    def save(self, *args, **kwargs):
+        """ The parent questionresponse may get a value for answer if it's
+            a file type. We're a bit cautious here because we don't want to
+            screw with the modified time stamp if the value isn't changing.
+            Plus performance concerns about unnecessary saves
+        """
+        
+        res = super(QuestionResponseResource, self).save(*args, **kwargs)
+        if self.question_response.resources_change_answer():
+            a = self.question_response.resource_answer()
+            if a != self.question_response.answer:
+                self.question_response.answer = a
+                self.question_response.save()
+        return res
+    
+    def delete(self, *args, **kwargs):
+        res = super(QuestionResponseResource, self).delete(*args,**kwargs)
+        if self.question_response.resources_change_answer():
+            a = self.question_response.resource_answer()
+            if a != self.question_response.answer:
+                self.question_response.answer = a
+                self.question_response.save()
+        return res

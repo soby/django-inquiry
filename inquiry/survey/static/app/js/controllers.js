@@ -397,6 +397,8 @@ inquiryControllers
 			
 			// set by our drop directive
 			$scope.dropSupported = true;
+			// dropped or added files
+			$scope.new_resources = [];
 			
 			$scope.create_attachment = function($files, $event, $rejectedFiles) {
 				function create(f, aq) {
@@ -405,17 +407,46 @@ inquiryControllers
 							question_response: aq.id};
 
 					QuestionResponseResource.create(data)
+					.progress(function(evt) {
+						// Math.min is to fix IE which reports 200% sometimes
+						f.progress = Math.min(100, parseInt(100.0 * (evt.loaded / evt.total)));
+					 })
 					 .then(
 							function(record) {
-								delete f.$$hashKey; // screws with extend()
-								// f is the original file and what's in
-								// _resources for this question. Update it in 
-								// place
-								angular.extend(f, record.data);
+								QuestionResponse.get(aq.id).then(
+										function(response) {
+											// we replaced this with object data
+											delete response.question;
+											angular.extend(aq, response);
+											$scope.mark_section_completeness(
+													$scope.section_lookup[aq.section.toString()]
+											);
+										}
+								);
+								QuestionResponseResource.list({question_response: aq.id})
+								.then(function(records) {
+									$scope.new_resources.splice($scope.new_resources.indexOf(f), 1);
+									aq._resources = records;
+								});
+								
 							},
 							function(err) {
-								aq._resources.splice(aq._resources.indexOf(f), 1);
 								$scope.$parent.toast(err.detail);
+								$scope.new_resources.splice($scope.new_resources.indexOf(f), 1);
+								QuestionResponseResource.list({question_response: aq.id})
+								.then(function(records) {
+									aq._resources = records;
+								});
+								QuestionResponse.get(aq.id).then(
+										function(response) {
+											// we replaced this with object data
+											delete response.question;
+											angular.extend(aq, response);
+											$scope.mark_section_completeness(
+													$scope.section_lookup[aq.section.toString()]
+											);
+										}
+								);
 							}
 					);
 				}
@@ -431,12 +462,23 @@ inquiryControllers
 						QuestionResponseResource.delete(attachment).then(
 								function() {
 									aq._resources.splice(aq._resources.indexOf(attachment), 1);
+									QuestionResponse.get(aq.id).then(
+											function(response) {
+												// we replaced this with object data
+												delete response.question;
+												angular.extend(aq, response);
+												$scope.mark_section_completeness(
+														$scope.section_lookup[aq.section.toString()]
+												);
+											}
+									);
 								},
 								function(err) {
 									$scope.$parent.toast(err.detail 
 														|| 'Unable to delete');
 								}
 						);
+						
 					}
 				}
 				var confirm = $mdDialog.confirm()
@@ -478,7 +520,8 @@ inquiryControllers
 				var missing = false;
 				for (var i=0; i<section._questions.length;i++) {
 					var q = section._questions[i];
-					if (q.answer) {
+					// answer could be boolean false and be valid
+					if ((q.answer != null) && (q.answer != '')){
 						partial = true;
 					} else {
 						missing = true;
@@ -486,7 +529,7 @@ inquiryControllers
 				}
 				if (partial && !missing) {
 					section._completed = true;
-					section._partial = true;
+					section._partial = false;
 					section._not_started = false;
 				} else if (partial && missing) {
 					section._completed = false;
@@ -685,8 +728,17 @@ inquiryControllers
 		    	}
 		    }
 		    
-		    $scope.process_answer = function(direction) {
+		    $scope.process_answer = function() {
 		    	var prom = null;
+		    	function marksec(sec) {
+		    		return function() {
+		    			$scope.mark_section_completeness(
+								sec
+						);
+		    		}
+		    	} 
+		    	var mark_this_sec = marksec($scope.active_section);
+		    	
 		    	var t = $scope.active_question.question.question_type;
 		    	if (t == 'multiple choice'){
 		    		var selected = [];
@@ -697,58 +749,42 @@ inquiryControllers
 		    			}
 		    		}
 		    		selected = selected.sort().join(';');
-		    		if (selected == $scope.active_question._old_answer) {
-		    			var d = $q.defer();
-			    		d.resolve();
-			    		prom = d.promise;
-		    		} else {
-			    		prom = QuestionResponse.update($scope.active_question,
-			    				  {answer: selected}
-	    					   );
-			    		var q = $scope.active_question;
-			    		prom.then(
-						   		function(data) {
-						   			// we overwrite this with question objects
-						   			delete data.question;
-						   			angular.extend(q, data);
-						   		}
-	    				);
-		    		}
+		    		
+	    			prom = QuestionResponse.update($scope.active_question,
+		    				  {answer: selected}
+    					   );
+		    		var q = $scope.active_question;
+		    		prom.then(
+					   		function(data) {
+					   			// we overwrite this with question objects
+					   			delete data.question;
+					   			angular.extend(q, data);
+					   		}
+    				);
+
 		    	} else if (t == 'file') {
 		    		// the server handles this one by setting a token
-		    		// text value in the answer field
+		    		// text value in the answer field. We really shouldn't
+		    		// be here since there shouldn't be change events
 		    		var d = $q.defer();
 		    		d.resolve();
 		    		prom = d.promise;
 		    	}	
 		    	else {
-		    		if ($scope.active_question.answer == 
-		    					$scope.active_question._old_answer) {
-		    			var d = $q.defer();
-			    		d.resolve();
-			    		prom = d.promise;
-		    		} else {
-			    		prom = QuestionResponse.update($scope.active_question,
-			    						{answer: $scope.active_question.answer}
-					    		);
-			    		var q = $scope.active_question;
-			    		prom.then(
-						   		function(data) {
-						   			//we overwrite this with question objects
-						   			delete data.question;
-						   			angular.extend(q, data);
-						   		}
-	    				);
-		    		}
+		    		prom = QuestionResponse.update($scope.active_question,
+		    						{answer: $scope.active_question.answer}
+				    		);
+		    		var q = $scope.active_question;
+		    		prom.then(
+					   		function(data) {
+					   			//we overwrite this with question objects
+					   			delete data.question;
+					   			angular.extend(q, data);
+					   		}
+    				);
 		    	} 
 		    	prom.then(
-		    			function() {
-		    				if (direction == 'next') {
-		    					$scope.next_question();
-		    				} else {
-		    					$scope.previous_question();
-		    				}
-		    			},
+		    			mark_this_sec,
 		    			function(err) {
 		    				$scope.$parent.toast(err.detail);
 		    			}
@@ -757,6 +793,8 @@ inquiryControllers
 		    	
 		    }
 		    
+		    // These are top level calls within the controller so they get
+		    // called when the controller is instantiated
 		    Response.get($scope.oid)
 				.then(Response.include([{field: 'survey',
 				                         service: Survey},
@@ -802,7 +840,6 @@ inquiryControllers
 							$scope.questions = records;
 							
 							for (var i=0; i<records.length;i++) {
-								records[i]._old_answer = records[i].answer;
 								// we use this when adding attachments and
 								// loading files later
 								records[i]._resources = [];

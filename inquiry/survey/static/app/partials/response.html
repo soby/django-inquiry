@@ -14,11 +14,12 @@
 	            <p ng-show="active_question.question.question_type == 'file'" class="ng-hide">
 	               File response. Please add attachment(s) below.
 	            </p>
-                <input ng-show="active_question.question.question_type == 'text'" ng-model="active_question.answer" class="ng-hide app-questionresponse-text"></input>
-                <textarea layout-margin ng-show="active_question.question.question_type == 'textarea'" ng-model="active_question.answer" class="ng-hide app-questionresponse-textarea"></textarea>
+	            
+	            <input ng-model-options="{ updateOn: 'blur' }" ng-change="process_answer()" ng-model="active_question.answer" ng-show="active_question.question.question_type == 'text'" class="ng-hide app-questionresponse-text"></input>
+	            <textarea rows="5" ng-show="active_question.question.question_type == 'textarea'" ng-model-options="{ updateOn: 'blur' }" ng-change="process_answer()" layout-margin ng-model="active_question.answer" class="ng-hide app-questionresponse-textarea"></textarea>
                 
                 <md-content class="ng-hide app-questionresponse-boolean" ng-show="active_question.question.question_type == 'boolean'">
-                    <md-radio-group ng-model="active_question.answer">
+                    <md-radio-group ng-model="active_question.answer" ng-change="process_answer()">
                         <md-radio-button value="true" aria-label="True">
                             True
                         </md-radio-button>
@@ -29,14 +30,14 @@
                 </md-content>
                 
 	            <md-content class="ng-hide app-questionresponse-choice" ng-show="active_question.question.question_type == 'choice'">
-		            <md-radio-group ng-model="active_question.answer">
+		            <md-radio-group ng-model="active_question.answer" ng-change="process_answer()">
 				        <md-radio-button ng-repeat="d in active_question.question._choices" ng-value="d.value" aria-label="{{ d.name }}">
 				            {{ d.name }}
 				        </md-radio-button>
 				    </md-radio-group>
 			    </md-content>
 			    <md-content class="ng-hide app-questionresponse-multichoice" ng-init="d._selected=false" ng-show="active_question.question.question_type == 'multiple choice'">
-                     <md-checkbox ng-model="d._selected" ng-repeat="d in active_question.question._choices" aria-label="{{ d.name }}">
+                     <md-checkbox ng-change="process_answer()" ng-model="d._selected" ng-repeat="d in active_question.question._choices" aria-label="{{ d.name }}">
                          {{ d.name }}
                      </md-checkbox>
                 </md-content>
@@ -58,15 +59,30 @@
                           <md-button ng-click="delete_attachment(record)" class="md-warn">Delete</md-button>
                         </md-item-content>              
                         <md-divider layout-margin></md-divider>
+                </md-item>
+                <md-list>        
+                        <md-item ng-repeat="record in new_resources">
+                         <md-item-content md-ink-ripple="#bbb" layout="row" layout-align="start center">
+	                          <div class="md-tile-content" flex>
+	                            <h3>{{record.name}}</h3>
+	                          </div>
+	                          <div layout-margin class="app-upload-progress">
+	                            <md-progress-linear md-mode="determinate" ng-value="record.progress">&nbsp;hello!</md-progress-linear>
+	                          </div>
+                        </md-item-content>              
+                        <md-divider layout-margin></md-divider>
                      </md-item>
                 </md-list>
                 
 			    <div class="app-upload-elements" layout="row" layout-align="start center">
-				    <md-button class="md-button md-primary" type="file" ng-file-select ng-model="active_question._resources"
-					    ng-file-change="create_attachment($files, $event)" ng-multiple="true" ng-capture="'camera'|'other'"
-					>Upload</md-button>
+				    <md-button class="md-button md-primary">
+					   <div style="outline: 0; border: 0" ng-file-select ng-model="new_resources"
+                        ng-file-change="create_attachment($files, $event, null)" ng-multiple="true" ng-capture="'camera'|'other'">
+                            Upload
+                        </div>
+                    </md-button>
 					<p ng-if="dropSupported" class="app-drop-separator">OR<p>
-					<div class="app-attachment-drop-box" ng-file-drop ng-model="active_question._resources" 
+					<div class="app-attachment-drop-box" ng-file-drop ng-model="new_resources" 
 					    ng-file-change="create_attachment($files, $event, $rejectedFiles)" 
 					    ng-multiple="true" allowDir="true|false" // default true, allow dropping files only for Chrome webkit browser
 					    dragOverClass="{accept:'app-drag-file-accept', reject:'app-drag-file-reject', delay:100}" 
@@ -75,32 +91,6 @@
 					</div>
 			    </div>
 			    
-			    <ul ng-show="files.length > 0" class="response">
-	            <md-list>
-	               <md-item ng-repeat="f in files">
-	                <img ng-show="f.dataUrl" ng-src="{{f.dataUrl}}" class="thumb">
-	                <span class="progress" ng-show="f.progress >= 0">                       
-	                    <div style="width:{{f.progress}}%">{{f.progress}}%</div>
-	                </span>             
-	                <button class="button" ng-click="f.upload.abort();f.upload.aborted=true" 
-	                        ng-show="f.upload != null && f.progress < 100 && !f.upload.aborted">Abort</button>
-	                {{f.name}} - size: {{f.size}}B - type: {{f.type}}
-	                <a ng-show="f.result" href="javascript:void(0)" ng-click="f.showDetail = !f.showDetail">details</a>
-	                <div ng-show="f.showDetail">
-	                    <br/>
-	                    <div data-ng-show="f.result.result == null">{{f.result}}</div>
-	                    <ul>
-	                        <li ng-repeat="item in f.result.result">
-	                            <div data-ng-show="item.name">file name: {{item.name}}</div>
-	                            <div data-ng-show="item.fieldName">name: {{item.fieldName}}</div>
-	                            <div data-ng-show="item.size">size on the serve: {{item.size}}</div>
-	                            <div data-ng-show="item.value">value: {{item.value}}</div>
-	                        </li>
-	                    </ul>
-	                    <div data-ng-show="f.result.requestHeaders" class="reqh">request headers: {{f.result.requestHeaders}}</div>
-	                </div>
-	               </md-item>
-	            </md-list>
 			</div>
 	    </div>
 	    
@@ -108,7 +98,7 @@
 	<md-toolbar class="app-toolbar md-primary" id="app-questionresponse-footer">
         <md-content layout-margin layout="row" layout-align="space-between center">
                <div ng-show="previous_question_obj == null">&nbsp;</div>
-               <md-button ng-show="previous_question_obj" ng-click="process_answer('previous')" class="md-grid-item-content" aria-label="previous" layout="row" layout-align="start center">
+               <md-button ng-show="previous_question_obj" ng-click="previous_question()" class="md-grid-item-content" aria-label="previous" layout="row" layout-align="start center">
                     <div class="md-icon-container app-icon-prev">&nbsp;</div>
 	                <div>
 	                   <p class="app-response-nav-label app-response-previous-label">Previous: </p>
@@ -118,7 +108,7 @@
 	                </div>
                </md-button>
            
-               <md-button ng-show="next_question_obj" ng-click="process_answer('next')" class="md-grid-item-content" aria-label="next" layout="row" layout-align="end center">
+               <md-button ng-show="next_question_obj" ng-click="next_question()" class="md-grid-item-content" aria-label="next" layout="row" layout-align="end center">
                     <div>
                        <p class="app-response-nav-label app-response-next-label">Next: </p>
                        <p class="app-response-nav-text app-response-next-text">
