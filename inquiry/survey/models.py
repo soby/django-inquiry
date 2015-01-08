@@ -57,6 +57,11 @@ class ResourceMixin(models.Model):
     
     class Meta:
         abstract = True
+        
+    def save(self, *args, **kwargs):
+        if self.resource:
+            self.size = self.resource.size
+        return super(ResourceMixin, self).save(*args, **kwargs) 
 
 class Status(core_models.UserOwnedModel):
     name = models.CharField(max_length=1024)

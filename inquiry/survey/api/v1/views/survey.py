@@ -212,8 +212,24 @@ class QuestionResponseViewSet(base.BaseAPIViewMixin, base.OrderableViewMixin,
     filter_class = QuestionResponseFilter
 
 
+class QuestionResponseResourceFilter(filters.BaseFilterSet):
+    question_response__in = MethodFilter(action="handle_question_response_in")
+    
+    class Meta:
+        model = survey.QuestionResponseResourceSerializer.Meta.model
+        fields = ['name', 'description', 'resource_type', 'content_type',
+                  'size', 'question_response', 'question_response__in',
+                  'survey', 'response', 'section', 'owner']
+        
+    def handle_question_response_in(self, queryset, value):
+        l = json.loads(value)
+        if l:
+            return queryset.filter(question_response__in=l)
+        return queryset
+    
 class QuestionResponseResourceViewSet(base.BaseAPIViewMixin, ModelViewSet):
     serializer_class = survey.QuestionResponseResourceSerializer
     # Required for DjangoObjectPermissions
     queryset = serializer_class.Meta.model.objects.none()
     permission_classes = [survey_permissions.ResponseOwnedModelPermissions, ]
+    filter_class = QuestionResponseResourceFilter

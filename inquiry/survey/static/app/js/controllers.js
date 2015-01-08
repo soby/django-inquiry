@@ -376,22 +376,81 @@ inquiryControllers
 }])
 
 .controller('ResponseController', 
-		['$scope', '$routeParams', '$q', 'Survey', 'Response', 'ResponseSection', 
-		 'QuestionResponse', 'Section', 'Question', 'QuestionChoice',
-		function ($scope, $routeParams, $q, Survey, Response, 
-				  ResponseSection, QuestionResponse, Section, Question,
-				  QuestionChoice) {
+		['$scope', '$routeParams', '$q', '$upload', '$mdDialog', 'Survey',
+		 'Response', 'ResponseSection', 'QuestionResponse', 'Section',
+		 'Question', 'QuestionChoice', 'QuestionResponseResource',
+		function ($scope, $routeParams, $q, $upload, $mdDialog, Survey, 
+				  Response, ResponseSection, QuestionResponse, Section,
+				  Question, QuestionChoice, QuestionResponseResource) {
 			$scope.record = null;
 			$scope.oid = $routeParams.oid;
 			$scope.$parent.select('progress.'+$scope.oid);
 			$scope.sections = null;
 			$scope.questions = null;
 			$scope.section_lookup = {};
+			$scope.response_lookup = {};
 			$scope.active_section = null;
 			$scope.active_question = null;
 			// for nav
 			$scope.next_question_obj = null;
 			$scope.previous_question_obj = null;
+			
+			// set by our drop directive
+			$scope.dropSupported = true;
+			
+			$scope.create_attachment = function($files, $event, $rejectedFiles) {
+				function create(f, aq) {
+					var data = {name: f.name, content_type: f.type, 
+							resource: f, resource_type: 'file',
+							question_response: aq.id};
+
+					QuestionResponseResource.create(data)
+					 .then(
+							function(record) {
+								delete f.$$hashKey; // screws with extend()
+								// f is the original file and what's in
+								// _resources for this question. Update it in 
+								// place
+								angular.extend(f, record.data);
+							},
+							function(err) {
+								aq._resources.splice(aq._resources.indexOf(f), 1);
+								$scope.$parent.toast(err.detail);
+							}
+					);
+				}
+				
+				for (var i=0;i<$files.length;i++) {
+					create($files[i], $scope.active_question);
+				}
+			}
+			
+			$scope.delete_attachment = function(attachment) {
+				function del(aq, attachment) {
+					return function() {
+						QuestionResponseResource.delete(attachment).then(
+								function() {
+									aq._resources.splice(aq._resources.indexOf(attachment), 1);
+								},
+								function(err) {
+									$scope.$parent.toast(err.detail 
+														|| 'Unable to delete');
+								}
+						);
+					}
+				}
+				var confirm = $mdDialog.confirm()
+			      .content('Delete attachment "'+attachment.name+'"?')
+			      .ariaLabel('Confirm delete')
+			      .ok('Confirm')
+			      .cancel('Cancel');
+				$mdDialog.show(confirm).then(
+					del($scope.active_question, attachment), 
+					function() {
+						// cancel
+					}
+				);
+			}
 			
 			$scope.$on('menu.question_selected', function(e) {
 				// $scope.selected_question is inherited
@@ -744,6 +803,11 @@ inquiryControllers
 							
 							for (var i=0; i<records.length;i++) {
 								records[i]._old_answer = records[i].answer;
+								// we use this when adding attachments and
+								// loading files later
+								records[i]._resources = [];
+								$scope.response_lookup[records[i].id.toString()] = records[i];
+								
 								var id = records[i].section.toString();
 								if (!$scope.section_lookup[id]._questions) {
 									$scope.section_lookup[id]._questions = [];
@@ -820,10 +884,33 @@ inquiryControllers
 							  	    				rec.question._choices.sort(function(a,b) { a.order - b.order});
 							  	    		}
 							  	    	}
-							  	    }	  
-							    );
-						}
-					);
-				}
-			);
+							  	    	return choices;
+							  	    }); // QuestionChoice.list().then()
+							return records;
+						}) // QuestionResponse.list().then()
+						.then(
+							function(records) {
+								var response_ids = [];
+								for (var i=0; i<records.length;i++) {
+								    response_ids.push(records[i].id);
+								}
+								var qquery = '['+response_ids.toString()+']';
+								QuestionResponseResource.list({question_response__in: qquery})
+									.then(
+										function(records) {
+											for (var i=0;i<records.length;i++) {
+												$scope.response_lookup[
+												     records[i].question_response.toString()
+												   ]._resources.push(records[i]);
+											}
+										},
+										function(err) {
+											$scope.$parent.toast(err.detail);
+										}
+											
+									);
+							}	
+						); // QuestionResponse.list().then()
+					
+				}); // ResponseSection.list().then()
 }]);

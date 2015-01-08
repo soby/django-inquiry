@@ -112,6 +112,33 @@ p.app-questionresponse-answer-label {
     font-style: italic;	
 }
 
+.app-questionresponse-resource-label {
+	margin-bottom: 0px;
+}
+
+.app-attachment-drop-box {
+	background: #F8F8F8;
+	border: 5px dashed #DDD;
+	width: 200px;
+	height: 75px;
+	text-align: center;
+	padding-top: 25px;
+	float: left;
+	margin-left: 20px;
+}
+
+.app-attachment-drop-box.dragover {
+    border: 5px dashed blue;
+}
+
+.app-attachment-drop-box.dragover-err {
+    border: 5px dashed red;
+}
+
+.app-drop-separator {
+	margin-left:30px;
+	margin-right:30px;
+}
 #app-questionresponse-footer md-content {
 	background: #E0E0E0!important;
 }

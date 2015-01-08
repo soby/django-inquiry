@@ -91,6 +91,30 @@ app.config(['$provide', function($provide) {
 									 $q);
 	}]); // provide.factory
 	
+	$provide.factory('QuestionResponseResource',['$http','$q', '$upload', 
+	                                     function($http, $q, $upload) { 
+		var srvs = create_basic_services('/api/v1/survey/questionresponseresource/', 
+				     				 $http,
+									 $q);
+		return angular.extend(srvs,{
+			create : function(data) {
+				var res = data.resource;
+				delete data.resource;
+				return $upload.upload({
+					url: '/api/v1/survey/questionresponseresource/',
+					method: 'POST',
+					data: data,
+					file: res,
+					fileFormDataName: 'resource',
+				});
+			},
+			update : function(obj) {
+				
+			}
+			
+		});
+	}]); // provide.factory
+	
 	$provide.factory('QuestionChoice',['$http','$q', function($http, $q) { 
 		return create_basic_services('/api/v1/survey/questionchoice/', 
 				     				 $http,

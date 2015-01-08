@@ -212,4 +212,4 @@ class QuestionResponseResourceSerializer(ResponseOwnedMixin,
              'resource', 'resource_type', 'content_type', 'size']
         read_only_fields =\
             base.RESPONSE_SECTION_OWNED_READ_ONLY_FIELDS +\
-                ['section', 'content_type', 'size']
+                ['section', 'size']

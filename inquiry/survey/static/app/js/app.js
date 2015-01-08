@@ -3,7 +3,7 @@
 // Declare app level module which depends on views, and components
 var app = angular.module('inquiry', [
   'ngRoute', 'inquiryControllers', 'ngAnimate', 'ngMaterial', 'ngSanitize',
-  'truncate'
+  'truncate', 'angularFileUpload',
 ]);
 
 app.config(['$routeProvider', '$mdThemingProvider', 
