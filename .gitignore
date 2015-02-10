@@ -5,3 +5,6 @@ venv
 test.db
 mock_file*
 .DS_Store
+build/*
+dist/*
+django_inquiry.egg-info/*
