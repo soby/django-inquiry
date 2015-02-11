@@ -7,4 +7,3 @@ djangorestframework==3.0.1
 python-social-auth==0.2.1
 django-mailgun==0.2.2
 django-filter==0.9.1
-

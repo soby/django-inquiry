@@ -13,19 +13,10 @@ from guardian.models import GroupObjectPermissionBase
 import logging
 LOGGER = logging.getLogger(__name__)
 
-class BaseModel(models.Model):
-    created = models.DateTimeField(auto_now_add=True)
-    modified = models.DateTimeField(auto_now=True)
-    
-    class Meta:
-            abstract = True
-        
-class OrgQuerySet(models.QuerySet):
-    def for_user(self,user):
-        return self.filter(id=user.org_id)
-    def for_admin(self,user):
-        return self.filter(id=user.org_id)
-    
+from .querysets import *
+from .base import *
+
+
 class Org(BaseModel):
     name = models.CharField(max_length=512)
     subdomain = models.CharField(max_length=256,null=True,blank=True,unique=True)
@@ -52,18 +43,7 @@ class OrgUserObjectPermission(UserObjectPermissionBase):
     content_object = models.ForeignKey(settings.AUTH_ORG_MODEL)
 class OrgGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(settings.AUTH_ORG_MODEL)
-
-class OrgOwnedModel(BaseModel):
-    org = models.ForeignKey(settings.AUTH_ORG_MODEL)
     
-    class Meta:
-        abstract = True
-    
-class SameOrgQuerySet(models.QuerySet):
-    def for_user(self,user):
-        return self.filter(org_id=user.org_id)
-    def for_admin(self,user):
-        return self.filter(org_id=user.org_id)
     
 class User(AbstractBaseUser,PermissionsMixin, OrgOwnedModel):
     username = models.CharField(_('username'), max_length=128, unique=True,
@@ -140,35 +120,6 @@ class UserUserObjectPermission(UserObjectPermissionBase):
                                        related_name='userpermission')
 class UserGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(settings.AUTH_USER_MODEL)
-
-class UserOwnerQuerySet(models.QuerySet):
-    def for_user(self,user):
-        return self.filter(owner_id=user.pk)
-    def for_admin(self,user):
-        return self.filter(org_id=user.org_id)
-    
-class UserOwnedModel(OrgOwnedModel):
-    owner = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True,
-                              related_name='%(app_label)s_%(class)s_owner_set')
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True,
-                        blank=True,
-                        related_name='%(app_label)s_%(class)s_created_by_set')
-    modified_by = models.ForeignKey(settings.AUTH_USER_MODEL,
-                                    null=True,blank=True,
-                        related_name='%(app_label)s_%(class)s_modified_by_set')
-    
-    objects = models.Manager()
-    manager = UserOwnerQuerySet.as_manager()
-    
-    class Meta:
-        abstract = True
-        
-class GroupQuerySet(models.QuerySet):
-    def for_user(self,user):
-        return self.filter(name__startswith='org_{0}_'.format(user.org_id))
-
-# Dirty monkey patch
-Group.add_to_class('manager',GroupQuerySet.as_manager()) #@UndefinedVariable
     
 
 

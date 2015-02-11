@@ -5,7 +5,8 @@ from django.conf import settings
 from django.utils.translation import ugettext_lazy as _
 
 from ordered_model.models import OrderedModel
-from ..core import models as core_models
+from ..core import querysets as core_queryset
+from ..core import base as core_base
 
 from guardian.models import UserObjectPermissionBase
 from guardian.models import GroupObjectPermissionBase
@@ -63,7 +64,7 @@ class ResourceMixin(models.Model):
             self.size = self.resource.size
         return super(ResourceMixin, self).save(*args, **kwargs) 
 
-class Status(core_models.UserOwnedModel):
+class Status(core_base.UserOwnedModel):
     name = models.CharField(max_length=1024)
     label = models.CharField(max_length=1024, null=True, blank=True)
     help_text = models.CharField(max_length=1024, null=True, blank=True)
@@ -71,7 +72,7 @@ class Status(core_models.UserOwnedModel):
                                        help_text=_('This is a final state'))
     
     objects = models.Manager()
-    manager = core_models.SameOrgQuerySet.as_manager()
+    manager = core_queryset.SameOrgQuerySet.as_manager()
     
     class Meta:
         unique_together = [ ('name', 'org'), ]
@@ -92,14 +93,14 @@ class StatusGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Status)
     
     
-class Type(core_models.UserOwnedModel):
+class Type(core_base.UserOwnedModel):
     name = models.CharField(max_length=1024)
     statuses = models.ManyToManyField(Status)
     initial_status = models.ForeignKey(Status,
                                     related_name='surveytype_initial_statuses')
 
     objects = models.Manager()
-    manager = core_models.SameOrgQuerySet.as_manager()
+    manager = core_queryset.SameOrgQuerySet.as_manager()
     
     def __unicode__(self):
         return '<{0}({1}):{2} {3}>'.format(self.__class__.__name__, 
@@ -116,7 +117,7 @@ class TypeGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Type)
     
     
-class Survey(core_models.UserOwnedModel):
+class Survey(core_base.UserOwnedModel):
     name = models.CharField(max_length=1024)
     description = models.TextField()
     survey_type = models.ForeignKey(Type)
@@ -139,7 +140,7 @@ class SurveyGroupObjectPermission(GroupObjectPermissionBase):
     content_object = models.ForeignKey(Survey)
 
     
-class Section(core_models.UserOwnedModel, OrderedModel):
+class Section(core_base.UserOwnedModel, OrderedModel):
     parent = models.ForeignKey(Survey)
     name = models.CharField(max_length=1024)
     description = models.TextField()
@@ -152,7 +153,7 @@ class Section(core_models.UserOwnedModel, OrderedModel):
     def __str__(self):
         return self.__unicode__().encode('utf-8')
 
-class SectionOwnedModel(core_models.UserOwnedModel):
+class SectionOwnedModel(core_base.UserOwnedModel):
     parent = models.ForeignKey(Survey)
     section = models.ForeignKey(Section)
     
@@ -255,7 +256,7 @@ class QuestionResource(ResourceMixin,SectionOwnedModel):
     question = models.ForeignKey(Question)
 
 
-class Response(core_models.UserOwnedModel):
+class Response(core_base.UserOwnedModel):
     survey = models.ForeignKey(Survey)
     user = models.ForeignKey(settings.AUTH_USER_MODEL)
     
@@ -326,7 +327,7 @@ class ResponseOwnedPermissionQuerySet(ParentOwnedPermissionQuerySet):
     parent_key = 'response'
     
     
-class ResponseOwnedModel(core_models.UserOwnedModel):
+class ResponseOwnedModel(core_base.UserOwnedModel):
     survey   = models.ForeignKey(Survey)
     response = models.ForeignKey(Response)
     
