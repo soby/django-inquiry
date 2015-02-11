@@ -7,7 +7,7 @@ from guardian.shortcuts import assign_perm, remove_perm, get_users_with_perms
 
 from ..core.utils.auth import group_for_org,make_global_perm, make_perm
 from ..core.utils.auth import get_org_model
-from ..core import models as core_models
+from ..core import base as core_base
 from . import models
 
 # org post save
@@ -133,7 +133,7 @@ def assign_CRUD_to_admins_and_owner(sender, instance, created, **kwargs):
         
         assign_perm(make_perm(instance,'change'), admins, instance)
         assign_perm(make_perm(instance,'delete'), admins, instance)
-        if isinstance(instance,core_models.UserOwnedModel):
+        if isinstance(instance,core_base.UserOwnedModel):
             if getattr(instance,'owner_id',None):
                 assign_perm(make_perm(instance,'change'), 
                             instance.owner, instance)
@@ -147,7 +147,7 @@ def assign_CRUD_to_new_owner(sender, instance, raw, **kwargs):
         # the post-save above will get this one
         return
     
-    if isinstance(instance,core_models.UserOwnedModel):
+    if isinstance(instance,core_base.UserOwnedModel):
         existing_owner = instance.__class__.objects.filter(pk=instance.pk)\
                                 .only('owner')[0].owner
         if existing_owner != instance.owner_id:
@@ -185,7 +185,7 @@ def org_post_save_handler(sender, instance, created, **kwargs):
 
 config = apps.get_app_config('survey')
 for model in config.get_models():
-    if issubclass(model,core_models.BaseModel):
+    if issubclass(model,core_base.BaseModel):
         signals.post_save.connect(assign_CRUD_to_admins_and_owner, model)
         signals.pre_save.connect(assign_CRUD_to_new_owner, model)
     
